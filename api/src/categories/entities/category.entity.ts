@@ -4,10 +4,12 @@ import {
   Entity,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('categories')
+@Unique(['name', 'user'])
 export class Category {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
