@@ -10,7 +10,7 @@ import { Category } from '../../categories/entities/category.entity';
 import type { IntentionStatus } from '../../shared/types';
 
 @Entity('intentions')
-export class Intention {
+export class buyIntention {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
@@ -22,9 +22,6 @@ export class Intention {
 
   @Column()
   description!: string;
-
-  @Column('decimal', { precision: 10, scale: 2 })
-  total_amount!: number;
 
   @Column('decimal', { precision: 10, scale: 2 })
   installment_amount!: number;

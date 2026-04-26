@@ -8,14 +8,14 @@ import { CategoriesModule } from './categories/categories.module';
 import { CreditCardsModule } from './credit-cards/credit-cards.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { InstallmentsModule } from './installments/installments.module';
-import { IntentionsModule } from './intentions/intentions.module';
+import { IntentionsModule } from './buy-intentions/intentions.module';
 import { ProjectionModule } from './projection/projection.module';
 import { User } from './users/entities/user.entity';
 import { Category } from './categories/entities/category.entity';
 import { CreditCard } from './credit-cards/entities/credit-card.entity';
 import { Expense } from './expenses/entities/expense.entity';
 import { Installment } from './installments/entities/installment.entity';
-import { Intention } from './intentions/entities/intention.entity';
+import { buyIntention } from './buy-intentions/entities/buyIntention.entity';
 
 @Module({
   imports: [
@@ -41,7 +41,14 @@ import { Intention } from './intentions/entities/intention.entity';
         username: config.get('DATABASE_USER'),
         password: config.get('DATABASE_PASS'),
         database: config.get('DATABASE_NAME'),
-        entities: [User, Category, CreditCard, Expense, Installment, Intention],
+        entities: [
+          User,
+          Category,
+          CreditCard,
+          Expense,
+          Installment,
+          buyIntention,
+        ],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: false,
         migrationsRun: false,

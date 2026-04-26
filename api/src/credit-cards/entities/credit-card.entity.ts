@@ -25,7 +25,7 @@ export class CreditCard {
   closing_day!: number;
 
   @Column('int')
-  due_day!: number;
+  payment_due_day!: number;
 
   @CreateDateColumn()
   created_at!: Date;
