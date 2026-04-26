@@ -40,12 +40,16 @@ export class CategoriesService {
   }
 
   async remove(id: string, userId: string) {
+    const category = await this.categoryRepository.findOne({
+      where: { id, user: { id: userId } },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Categoria não encontrada.');
+    }
+
     try {
-      const result = await this.categoryRepository.delete({ id, user: { id: userId } });
-      
-      if (result.affected === 0) {
-        throw new NotFoundException('Categoria não encontrada.');
-      }
+      await this.categoryRepository.delete({ id, user: { id: userId } });
       return { message: 'Categoria removida com sucesso' };
       
     } catch (error) {
