@@ -14,7 +14,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "baseUrl": "./",
-    "incremental": true,
+    "incremental": false,
     "skipLibCheck": true,
     "strictNullChecks": true,
     "forceConsistentCasingInFileNames": true,
@@ -23,4 +23,4 @@
     "noFallthroughCasesInSwitch": false
   }
 }
-//ignorar, somente avisos
+//ignorar "erros", somente avisos
