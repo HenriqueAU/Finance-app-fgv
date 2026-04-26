@@ -1,22 +1,20 @@
 import {
+  IsInt,
   IsNumber,
   IsOptional,
   IsString,
   IsUUID,
+  Matches,
   Max,
   MaxLength,
   Min,
   MinLength,
 } from 'class-validator';
 
-export class CreateExpenseDto {
+export class CreateBuyIntentionDto {
   @IsOptional()
   @IsUUID()
   categoryId?: string;
-
-  @IsOptional()
-  @IsUUID()
-  creditCardId?: string;
 
   @IsString()
   @MinLength(2)
@@ -25,11 +23,16 @@ export class CreateExpenseDto {
 
   @IsNumber()
   @Min(0)
-  amount!: number;
+  installment_amount!: number;
 
-  @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(1)
-  @Max(31)
-  due_day?: number | null;
+  @Max(60)
+  months!: number;
+
+  @IsString()
+  @Matches(/^\d{4}-(0[1-9]|1[0-2])$/, {
+    message: 'month must be in YYYY-MM format',
+  })
+  desired_start_month!: string;
 }
