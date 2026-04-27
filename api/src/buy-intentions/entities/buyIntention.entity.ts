@@ -10,7 +10,7 @@ import { Category } from '../../categories/entities/category.entity';
 import type { IntentionStatus } from '../../shared/types';
 
 @Entity('intentions')
-export class buyIntention {
+export class BuyIntention {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
@@ -29,7 +29,7 @@ export class buyIntention {
   @Column('int')
   months!: number;
 
-  @Column()
+  @Column({ name: 'desired_start_month', type: 'varchar' })
   desired_start_month!: string;
 
   @Column({ default: 'pending' })

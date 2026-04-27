@@ -8,14 +8,14 @@ import { CategoriesModule } from './categories/categories.module';
 import { CreditCardsModule } from './credit-cards/credit-cards.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { InstallmentsModule } from './installments/installments.module';
-import { IntentionsModule } from './buy-intentions/intentions.module';
+import { BuyIntentionsModule } from './buy-intentions/intentions.module';
 import { ProjectionModule } from './projection/projection.module';
 import { User } from './users/entities/user.entity';
 import { Category } from './categories/entities/category.entity';
 import { CreditCard } from './credit-cards/entities/credit-card.entity';
 import { Expense } from './expenses/entities/expense.entity';
 import { Installment } from './installments/entities/installment.entity';
-import { buyIntention } from './buy-intentions/entities/buyIntention.entity';
+import { BuyIntention } from './buy-intentions/entities/buyIntention.entity';
 
 @Module({
   imports: [
@@ -26,7 +26,7 @@ import { buyIntention } from './buy-intentions/entities/buyIntention.entity';
     CreditCardsModule,
     ExpensesModule,
     InstallmentsModule,
-    IntentionsModule,
+    BuyIntentionsModule,
     ProjectionModule,
     ConfigModule.forRoot({
       isGlobal: true,
@@ -47,7 +47,7 @@ import { buyIntention } from './buy-intentions/entities/buyIntention.entity';
           CreditCard,
           Expense,
           Installment,
-          buyIntention,
+          BuyIntention,
         ],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: false,
