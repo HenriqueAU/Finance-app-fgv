@@ -4,18 +4,22 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+interface AuthenticadedRequest extends Request {
+  user: { id: string; email: string };
+}
+
 @Controller('categories')
 @UseGuards(JwtAuthGuard)
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  create(@Body() createCategoryDto: CreateCategoryDto, @Request() req) {
+  create(@Body() createCategoryDto: CreateCategoryDto, @Request() req: AuthenticadedRequest) {
     return this.categoriesService.create(createCategoryDto, req.user.id);
   }
 
   @Get()
-  findAll(@Request() req) {
+  findAll(@Request() req: AuthenticadedRequest) {
     return this.categoriesService.findAll(req.user.id);
   }
 
@@ -23,13 +27,12 @@ export class CategoriesController {
   update(
     @Param('id') id: string, 
     @Body() updateCategoryDto: UpdateCategoryDto, 
-    @Request() req
-  ) {
+    @Request() req: AuthenticadedRequest) {
     return this.categoriesService.update(id, updateCategoryDto, req.user.id);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Request() req) {
+  remove(@Param('id') id: string, @Request() req: AuthenticadedRequest) {
     return this.categoriesService.remove(id, req.user.id);
   }
 }

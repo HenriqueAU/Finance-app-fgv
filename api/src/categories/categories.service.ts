@@ -48,12 +48,7 @@ export class CategoriesService {
       throw new NotFoundException('Categoria não encontrada.');
     }
 
-    try {
-      await this.categoryRepository.delete({ id, user: { id: userId } });
-      return { message: 'Categoria removida com sucesso' };
-      
-    } catch (error) {
-      throw new BadRequestException('Não é possível remover esta categoria pois ela já está em uso.');
-    }
+    await this.categoryRepository.delete(id);
+    return { message: 'Categoria removida' };
   }
 }
