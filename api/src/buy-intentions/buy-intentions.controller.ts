@@ -1,7 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  Request,
+  Query,
+} from '@nestjs/common';
 import { BuyIntentionsService } from './buy-intentions.service';
 import { CreateBuyIntentionDto } from './dto/create-intention.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { IntentionStatus } from '../shared/types';
 
 interface AuthenticadedRequest extends Request {
   user: { id: string; email: string };
@@ -13,17 +25,31 @@ export class BuyIntentionsController {
   constructor(private readonly intentionsService: BuyIntentionsService) {}
 
   @Post()
-  create(@Body() createDto: CreateBuyIntentionDto, @Request() req: AuthenticadedRequest) {
+  create(
+    @Body() createDto: CreateBuyIntentionDto,
+    @Request() req: AuthenticadedRequest,
+  ) {
     return this.intentionsService.create(createDto, req.user.id);
   }
 
   @Post('simulate')
-  simulate(@Body() dto: CreateBuyIntentionDto, @Request() req: AuthenticadedRequest) {
-    return this.intentionsService.simulate(dto, req.user.id);
+  simulate(
+    @Body() dto: CreateBuyIntentionDto,
+    @Request() req: AuthenticadedRequest,
+  ) {
+    return this.intentionsService.simulateIntention(
+      req.user.id,
+      dto.installment_amount,
+      dto.months,
+      dto.desired_start_month,
+    );
   }
 
   @Get()
-  findAll(@Query('status') status: string, @Request() req: AuthenticadedRequest) {
+  findAll(
+    @Query('status') status: IntentionStatus,
+    @Request() req: AuthenticadedRequest,
+  ) {
     return this.intentionsService.findAll(req.user.id, status);
   }
 

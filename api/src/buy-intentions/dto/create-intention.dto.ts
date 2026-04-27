@@ -18,12 +18,8 @@ export class CreateBuyIntentionDto {
 
   @IsString()
   @MinLength(2)
-  @MaxLength(30)
+  @MaxLength(100)
   description!: string;
-
-  @IsNumber()
-  @Min(0)
-  total_amount!: number;
 
   @IsNumber()
   @Min(0)
