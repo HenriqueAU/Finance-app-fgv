@@ -15,7 +15,7 @@ import { Category } from './categories/entities/category.entity';
 import { CreditCard } from './credit-cards/entities/credit-card.entity';
 import { Expense } from './expenses/entities/expense.entity';
 import { Installment } from './installments/entities/installment.entity';
-import { buyIntention } from './buy-intentions/entities/buyIntention.entity';
+import { BuyIntention } from './buy-intentions/entities/buyIntention.entity';
 
 @Module({
   imports: [
@@ -47,7 +47,7 @@ import { buyIntention } from './buy-intentions/entities/buyIntention.entity';
           CreditCard,
           Expense,
           Installment,
-          buyIntention,
+          BuyIntention,
         ],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
         synchronize: false,

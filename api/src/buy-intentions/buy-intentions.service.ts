@@ -1,20 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { buyIntention } from './entities/buyIntention.entity';
+import { BuyIntention } from './entities/buyIntention.entity';
 import { CreateBuyIntentionDto } from './dto/create-intention.dto';
 import { ProjectionService } from '../projection/projection.service';
+import { IntentionStatus, ViabilityResult } from '../shared/types';
 
 @Injectable()
 export class BuyIntentionsService {
   constructor(
-    @InjectRepository(buyIntention)
-    private readonly intentionRepository: Repository<buyIntention>,
+    @InjectRepository(BuyIntention)
+    private readonly intentionRepository: Repository<BuyIntention>,
     private readonly projectionService: ProjectionService,
   ) {}
 
   async create(createDto: CreateBuyIntentionDto, userId: string) {
-    const { categoryId, ...data } = createDto
+    const { categoryId, ...data } = createDto;
     const intention = this.intentionRepository.create({
       ...data,
       user: { id: userId },
@@ -24,28 +25,62 @@ export class BuyIntentionsService {
     return await this.intentionRepository.save(intention);
   }
 
-  async findAll(userId: string, status?: string) {
+  async findAll(userId: string, status?: IntentionStatus) {
     return await this.intentionRepository.find({
-      where: { 
+      where: {
         user: { id: userId },
-        ...(status && { status: status as any }) 
+        ...(status && { status }),
       },
       relations: ['category'],
+      order: { created_at: 'DESC' },
     });
   }
 
-  async simulate(dto: CreateBuyIntentionDto, userId: string) {
-    return await this.projectionService.simulateIntention(
-      userId,
-      dto.installment_amount,
-      dto.months,
-      dto.desired_start_month,
+  async simulateIntention(
+    userId: string,
+    installmentAmount: number,
+    months: number,
+    desiredStartMonth: string,
+  ): Promise<ViabilityResult> {
+    const affectedMonths = this.projectionService.getMonthsBetween(
+      desiredStartMonth,
+      this.projectionService.addMonths(desiredStartMonth, months - 1),
     );
+
+    const projections = await Promise.all(
+      affectedMonths.map(async (month) => {
+        const base = await this.projectionService.getMonthProjection(
+          userId,
+          month,
+        );
+        return {
+          ...base,
+          totalIntentions: installmentAmount,
+          available: base.available - installmentAmount,
+          freeToSpend: base.freeToSpend - installmentAmount,
+          isCritical: base.freeToSpend - installmentAmount < 0,
+        };
+      }),
+    );
+
+    const criticalMonths = projections
+      .filter((p) => p.isCritical)
+      .map((p) => p.month);
+
+    return {
+      viable: criticalMonths.length === 0,
+      criticalMonths,
+      projection: projections,
+    };
   }
 
-  async updateStatus(id: string, userId: string, status: 'approved' | 'cancelled') {
+  async updateStatus(
+    id: string,
+    userId: string,
+    status: 'approved' | 'cancelled',
+  ) {
     const intention = await this.intentionRepository.findOne({
-      where: { id, user: { id: userId } }
+      where: { id, user: { id: userId } },
     });
 
     if (!intention) {
@@ -57,8 +92,11 @@ export class BuyIntentionsService {
   }
 
   async remove(id: string, userId: string) {
-    const result = await this.intentionRepository.delete({ id, user: { id: userId } });
-    if (result.affected === 0) throw new NotFoundException('Intenção não encontrada.');
+    const intention = await this.intentionRepository.findOne({
+      where: { id, user: { id: userId } },
+    });
+    if (!intention) throw new NotFoundException('Intenção não encontrada.');
+    await this.intentionRepository.remove(intention);
     return { message: 'Intenção removida com sucesso' };
   }
 }

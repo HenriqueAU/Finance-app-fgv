@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ExpensesService } from '../expenses/expenses.service';
 import { InstallmentsService } from '../installments/installments.service';
 import { UsersService } from '../users/users.service';
-import { MonthProjection, ViabilityResult } from '../shared/types';
+import { MonthProjection } from '../shared/types';
 
 @Injectable()
 export class ProjectionService {
@@ -56,42 +56,8 @@ export class ProjectionService {
     );
   }
 
-  async simulateIntention(
-    userId: string,
-    installmentAmount: number,
-    months: number,
-    desiredStartMonth: string,
-  ): Promise<ViabilityResult> {
-    const affectedMonths = this.getMonthsBetween(
-      desiredStartMonth,
-      this.addMonths(desiredStartMonth, months - 1),
-    );
-
-    const projections = await Promise.all(
-      affectedMonths.map(async (month) => {
-        const base = await this.getMonthProjection(userId, month);
-        return {
-          ...base,
-          totalIntentions: installmentAmount,
-          available: base.available - installmentAmount,
-          freeToSpend: base.freeToSpend - installmentAmount,
-          isCritical: base.freeToSpend - installmentAmount < 0,
-        };
-      }),
-    );
-
-    const criticalMonths = projections
-      .filter((p) => p.isCritical)
-      .map((p) => p.month);
-
-    return {
-      viable: criticalMonths.length === 0,
-      criticalMonths,
-      projection: projections,
-    };
-  }
-
-  private getMonthsBetween(from: string, to: string): string[] {
+  public getMonthsBetween(from: string, to: string): string[] {
+    if (from > to) return [];
     const months: string[] = [];
     let current = from;
     while (current <= to) {
@@ -101,7 +67,7 @@ export class ProjectionService {
     return months;
   }
 
-  private addMonths(month: string, count: number): string {
+  public addMonths(month: string, count: number): string {
     const [year, m] = month.split('-').map(Number);
     const date = new Date(year, m - 1 + count);
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
