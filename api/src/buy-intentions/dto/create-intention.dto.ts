@@ -23,6 +23,10 @@ export class CreateBuyIntentionDto {
 
   @IsNumber()
   @Min(0)
+  total_amount!: number;
+
+  @IsNumber()
+  @Min(0)
   installment_amount!: number;
 
   @IsInt()
