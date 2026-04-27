@@ -5,6 +5,7 @@ import { DashboardComponent as Dashboard} from './features/dashboard/dashboard/d
 import { FixedExpensesComponent } from './features/fixed-expenses/fixed-expenses/fixed-expenses';
 import { InstallmentsComponent } from './features/installments/installments/installments';
 import { IntentionsComponent } from './features/intentions/intentions/intentions';
+import { SettingsComponent } from './features/settings/settings/settings';
 //import { AuthGuard } from './core/guards/auth.guard'; // <-- Importe o AuthGuard
 
 export const routes: Routes = [
@@ -15,4 +16,5 @@ export const routes: Routes = [
   { path: 'parcelamentos', component: InstallmentsComponent },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
   { path: 'intencoes', component: IntentionsComponent },
+  { path: 'configuracoes', component: SettingsComponent }
 ];
