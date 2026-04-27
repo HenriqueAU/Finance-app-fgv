@@ -20,3 +20,8 @@ export interface User {
   emergencyReserve: number;
   payday: number;
 }
+
+export interface LoginResponse {
+  accessToken: string;
+  user: User;
+}
