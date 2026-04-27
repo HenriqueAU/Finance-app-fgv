@@ -10,7 +10,7 @@ import { Router } from '@angular/router';
   templateUrl: './register.html'
 })
 export class Register {
-  form = { name: '', email: '', password: '', salary: 0, payday: 5, emergencyReserve: 0 };
+  form = { name: '', email: '', password: '', salary: 0, payday: 5, emergency_reserve: 0 };
 
   constructor(private authService: AuthService, private router: Router) {}
 
