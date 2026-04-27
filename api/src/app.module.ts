@@ -8,7 +8,7 @@ import { CategoriesModule } from './categories/categories.module';
 import { CreditCardsModule } from './credit-cards/credit-cards.module';
 import { ExpensesModule } from './expenses/expenses.module';
 import { InstallmentsModule } from './installments/installments.module';
-import { IntentionsModule } from './buy-intentions/intentions.module';
+import { BuyIntentionsModule } from './buy-intentions/intentions.module';
 import { ProjectionModule } from './projection/projection.module';
 import { User } from './users/entities/user.entity';
 import { Category } from './categories/entities/category.entity';
@@ -26,7 +26,7 @@ import { buyIntention } from './buy-intentions/entities/buyIntention.entity';
     CreditCardsModule,
     ExpensesModule,
     InstallmentsModule,
-    IntentionsModule,
+    BuyIntentionsModule,
     ProjectionModule,
     ConfigModule.forRoot({
       isGlobal: true,
