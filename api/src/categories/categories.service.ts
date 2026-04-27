@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
@@ -26,16 +26,25 @@ export class CategoriesService {
     });
   }
 
-  async update(id: string, updateCategoryDto: UpdateCategoryDto, userId: string) {
+  async update(
+    id: string,
+    updateCategoryDto: UpdateCategoryDto,
+    userId: string,
+  ) {
     const category = await this.categoryRepository.findOne({
       where: { id, user: { id: userId } },
     });
 
     if (!category) {
-      throw new NotFoundException('Categoria não encontrada ou não pertence a você.');
+      throw new NotFoundException(
+        'Categoria não encontrada ou não pertence a você.',
+      );
     }
 
-    const updatedCategory = this.categoryRepository.merge(category, updateCategoryDto);
+    const updatedCategory = this.categoryRepository.merge(
+      category,
+      updateCategoryDto,
+    );
     return await this.categoryRepository.save(updatedCategory);
   }
 

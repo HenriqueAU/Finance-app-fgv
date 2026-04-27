@@ -21,7 +21,7 @@ export class CreateCreditCardDto {
   @IsInt()
   @Min(1)
   @Max(31)
-  billing_cycle_day!: number;
+  closing_day!: number;
 
   @IsInt()
   @Min(1)
