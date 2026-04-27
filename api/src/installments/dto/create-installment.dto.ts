@@ -22,7 +22,7 @@ export class CreateInstallmentDto {
 
   @IsString()
   @MinLength(2)
-  @MaxLength(30)
+  @MaxLength(100)
   description!: string;
 
   @IsNumber()
