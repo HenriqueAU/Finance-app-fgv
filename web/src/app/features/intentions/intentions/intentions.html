@@ -1,0 +1,139 @@
+<div class="flex h-screen w-full bg-slate-50 font-sans">
+  <app-sidebar></app-sidebar>
+
+  <main class="flex-1 h-screen flex flex-col overflow-hidden p-4 md:p-6">
+    
+    <header class="shrink-0 mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-black text-slate-800 tracking-tight">
+          Intenções de <span class="text-emerald-600">Compra</span>
+        </h1>
+        <p class="text-xs text-slate-500 mt-1">Lista de desejos aguardando aprovação no orçamento.</p>
+      </div>
+      
+      <button (click)="toggleModal()" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:scale-105 shadow-md shadow-emerald-200 flex justify-center items-center gap-2">
+        <span class="text-lg">+</span> Novo Desejo
+      </button>
+    </header>
+
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xl shadow-slate-100 flex flex-col flex-1 min-h-0">
+      
+      <div class="overflow-auto flex-1">
+        <table class="w-full text-left border-collapse min-w-[800px]">
+          <thead class="sticky top-0 bg-slate-50/95 backdrop-blur-sm z-10 shadow-sm">
+            <tr class="border-b border-slate-100">
+              <th class="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Desejo</th>
+              <th class="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Prioridade</th>
+              <th class="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Valor</th>
+              <th class="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
+              <th class="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Decisão / Ações</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-50">
+            @for (item of intentions; track item.id) {
+              <tr class="hover:bg-emerald-50/30 transition-colors group">
+                
+                <td class="px-6 py-3 whitespace-nowrap">
+                  <p class="font-bold text-slate-700 text-sm">{{ item.name }}</p>
+                  <p class="text-[10px] font-black text-emerald-500 uppercase">{{ item.category }}</p>
+                </td>
+                
+                <td class="px-6 py-3 whitespace-nowrap text-xs font-bold text-slate-500">
+                  {{ item.priority }}
+                </td>
+                
+                <td class="px-6 py-3 whitespace-nowrap font-black text-slate-800 text-sm">
+                  {{ item.value | currency:'BRL' }}
+                </td>
+
+                <td class="px-6 py-3 text-center whitespace-nowrap">
+                  <span [class]="getStatusClass(item.status)" class="px-3 py-1 rounded-full text-[10px] font-black uppercase border">
+                    {{ translateStatus(item.status) }}
+                  </span>
+                </td>
+
+                <td class="px-6 py-3 text-right whitespace-nowrap">
+                  @if (item.status === 'PENDING') {
+                    <div class="flex justify-end items-center gap-1.5">
+                      <button (click)="updateStatus(item.id, 'APPROVED')" class="px-2.5 py-1 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg text-xs font-bold transition-colors border border-emerald-100" title="Aprovar">
+                        ✓ Aprovar
+                      </button>
+                      <button (click)="updateStatus(item.id, 'REJECTED')" class="px-2.5 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-bold transition-colors border border-rose-100 mr-2" title="Reprovar">
+                        ✗ Adiar
+                      </button>
+                      <button (click)="editIntention(item.id)" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors">✏️</button>
+                      <button (click)="deleteIntention(item.id)" class="p-1.5 text-slate-400 hover:text-red-500 transition-colors">🗑️</button>
+                    </div>
+                  } @else {
+                    <div class="flex justify-end items-center gap-1.5">
+                      <button (click)="editIntention(item.id)" class="p-1.5 text-slate-400 hover:text-emerald-600 transition-colors">✏️</button>
+                      <button (click)="deleteIntention(item.id)" class="p-1.5 text-slate-400 hover:text-red-500 transition-colors">🗑️</button>
+                    </div>
+                  }
+                </td>
+
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    @if (showModal) {
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+        <div class="bg-white w-full max-w-md mx-4 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          
+          <div class="bg-emerald-600 p-5 text-white">
+            <h2 class="text-lg font-bold">{{ editingId ? 'Editar' : 'Novo' }} Desejo</h2>
+            <p class="text-emerald-100 text-xs">Anotar suas intenções ajuda a evitar compras por impulso.</p>
+          </div>
+
+          <form [formGroup]="intentionForm" (ngSubmit)="onSubmit()" class="p-6 flex flex-col gap-4">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">O que você quer comprar?</label>
+              <input formControlName="name" type="text" placeholder="Ex: PlayStation 5..." 
+                     class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-emerald-500 outline-none transition-all text-sm">
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Valor Estimado (R$)</label>
+              <input formControlName="value" type="number" placeholder="0,00"
+                     class="w-full px-3 py-2 rounded-lg border border-slate-200 focus:border-emerald-500 outline-none transition-all text-sm">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Categoria</label>
+                <select formControlName="category" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white focus:border-emerald-500 outline-none text-sm">
+                  <option value="">Selecione...</option>
+                  <option value="Eletrônicos">Eletrônicos</option>
+                  <option value="Lazer">Lazer</option>
+                  <option value="Moradia">Moradia</option>
+                  <option value="Veículos">Veículos</option>
+                  <option value="Outros">Outros</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Prioridade</label>
+                <select formControlName="priority" class="w-full px-3 py-2 rounded-lg border border-slate-200 bg-white focus:border-emerald-500 outline-none text-sm">
+                  <option value="ALTA">Alta</option>
+                  <option value="MEDIA">Média</option>
+                  <option value="BAIXA">Baixa</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="flex gap-2 mt-2">
+              <button type="button" (click)="toggleModal()" class="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold text-slate-500 hover:bg-slate-100 transition-all">Cancelar</button>
+              <button type="submit" [disabled]="intentionForm.invalid" 
+                      class="flex-1 px-4 py-2.5 rounded-lg text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 transition-all shadow-md shadow-emerald-100">
+                Salvar
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    }
+
+  </main>
+</div>
