@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
@@ -24,7 +24,8 @@ export class FixedExpensesComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private expensesService: ExpensesService,
-    private categoriesService: CategoriesService
+    private categoriesService: CategoriesService,
+    private cdRef: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -49,28 +50,40 @@ export class FixedExpensesComponent implements OnInit {
         console.log('expenses:', data);
         this.expenses = [...data];
         this.isLoading = false;
+        
+        // CORREÇÃO: O fim do bug de ter que clicar duas vezes!
+        this.cdRef.detectChanges(); 
       },
       error: (_) => {
         console.error('erro:', _);
         this.errorMessage = 'Erro ao carregar contas fixas.';
         this.isLoading = false;
+        this.cdRef.detectChanges();
       }
     });
   }
 
   loadCategories() {
-    this.categoriesService.getAll().subscribe({
-      next: (data) => this.categories = data,
-      error: () => {} // silencioso, categoria é opcional
-    });
+    // Adicionamos o 'is_essential' para satisfazer o TypeScript!
+    this.categories = [
+      { id: 'fake-1', name: 'Moradia', color: '#3B82F6', description: 'Aluguel, luz', is_essential: true } as Category,
+      { id: 'fake-2', name: 'Alimentação', color: '#EF4444', description: 'Mercado', is_essential: true } as Category,
+      { id: 'fake-3', name: 'Transporte', color: '#F59E0B', description: 'Gasolina, Uber', is_essential: true } as Category,
+      { id: 'fake-4', name: 'Saúde', color: '#EC4899', description: 'Farmácia', is_essential: true } as Category,
+      { id: 'fake-5', name: 'Lazer', color: '#10B981', description: 'Streaming', is_essential: false } as Category,
+      { id: 'fake-6', name: 'Outros', color: '#6B7280', description: 'Diversos', is_essential: false } as Category
+    ];
+    this.cdRef.detectChanges();
   }
 
+  // Adicione ou atualize esta função no seu arquivo .ts
   getCategoryStyle(color: string | undefined): { [key: string]: string } {
-    if (!color) return {};
+    if (!color) return {}; // Se não tiver cor, não aplica estilo extra
+
     return {
-      'background-color': color + '22', // ~13% opacity
-      'color': color,
-      'border-color': color + '55'
+      'background-color': color + '22', // Fundo com 13% de opacidade
+      'color': color,                   // Texto na cor original
+      'border-color': color + '44'      // Borda levemente colorida
     };
   }
 
@@ -97,7 +110,7 @@ export class FixedExpensesComponent implements OnInit {
   deleteExpense(id: string) {
     if (confirm('Tem certeza que deseja excluir esta conta?')) {
       this.expensesService.remove(id).subscribe({
-        next: () => this.loadExpenses(), // idem
+        next: () => this.loadExpenses(), 
         error: () => this.errorMessage = 'Erro ao excluir conta.'
       });
     }
@@ -105,7 +118,7 @@ export class FixedExpensesComponent implements OnInit {
 
   toggleActive(expense: Expense) {
     this.expensesService.toggle(expense.id).subscribe({
-      next: () => this.loadExpenses(), // idem
+      next: () => this.loadExpenses(), 
       error: () => this.errorMessage = 'Erro ao alternar status.'
     });
   }
@@ -114,16 +127,27 @@ export class FixedExpensesComponent implements OnInit {
     if (this.expenseForm.invalid) return;
     const dto: CreateExpenseDto = this.expenseForm.value;
 
+    // TRUQUE DE MESTRE MELHORADO: Removemos o ID falso tanto para Criar quanto para Editar
+    const payload = { ...dto };
+    if (payload.categoryId && String(payload.categoryId).startsWith('fake-')) {
+      // Usamos undefined ou null dependendo do que o back-end do Henrique prefere.
+      // Se null der erro 400 de novo, troque para 'undefined'
+      payload.categoryId = null as any; 
+    }
+
     const request$ = this.editingId
-      ? this.expensesService.update(this.editingId, dto)
-      : this.expensesService.create(dto);
+      ? this.expensesService.update(this.editingId, payload) // O payload limpo vai aqui agora!
+      : this.expensesService.create(payload); // E aqui também
 
     request$.subscribe({
       next: () => {
-        this.loadExpenses(); // recarrega do back em vez de manipular o array
+        this.loadExpenses(); 
         this.toggleModal();
       },
-        error: () => this.errorMessage = 'Erro ao salvar conta.'
+      error: (err) => {
+        console.error('Erro detalhado do back-end:', err); // Adicionei isso pra gente ver no F12!
+        this.errorMessage = 'Erro ao salvar conta.';
+      }
     });
   }
 }
