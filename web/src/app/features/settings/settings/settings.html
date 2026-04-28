@@ -2,7 +2,7 @@
   <app-sidebar></app-sidebar>
 
   <main class="flex-1 h-screen overflow-y-auto p-4 md:p-8 relative">
-    
+
     @if (showSuccessMessage) {
       <div class="absolute top-8 right-8 bg-emerald-500 text-white px-6 py-3 rounded-xl shadow-lg shadow-emerald-200 font-bold flex items-center gap-2 animate-in slide-in-from-top-4 fade-in duration-300 z-50">
         <span>✓</span> Dados salvos com sucesso!
@@ -19,16 +19,16 @@
     </header>
 
     <div class="max-w-4xl">
-      
+
       <section class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 p-8">
-        
+
         <div class="flex items-center gap-4 mb-8">
           <div class="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center border border-slate-200 overflow-hidden shrink-0">
             <svg class="w-10 h-10 text-slate-400 mt-2" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
             </svg>
           </div>
-          
+
           <div class="overflow-hidden">
             <h2 class="text-xl font-bold text-slate-800 truncate">{{ currentName }}</h2>
             <p class="text-xs text-slate-500 truncate">{{ currentEmail }}</p>
@@ -36,17 +36,17 @@
         </div>
 
         <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="flex flex-col gap-6">
-          
+
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nome Completo</label>
-              <input formControlName="name" type="text" 
+              <input formControlName="name" type="text"
                      class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all">
             </div>
 
             <div>
               <label class="block text-xs font-bold text-slate-500 uppercase mb-2">E-mail</label>
-              <input formControlName="email" type="email" 
+              <input formControlName="email" type="email"
                      class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all">
             </div>
           </div>
@@ -54,12 +54,19 @@
           <div class="pt-4 border-t border-slate-100">
             <label class="block text-xs font-bold text-emerald-600 uppercase mb-2">Salário Mensal Base (R$)</label>
             <p class="text-xs text-slate-400 mb-3">Este valor é a base para o cálculo do seu saldo livre no Dashboard.</p>
-            <input formControlName="monthlySalary" type="number" 
+            <input formControlName="monthlySalary" type="number"
                    class="w-full md:w-1/2 px-4 py-3 rounded-xl border border-emerald-200 bg-emerald-50/30 focus:border-emerald-500 focus:bg-white outline-none transition-all font-bold text-slate-700">
           </div>
 
+          <div class="pt-4 border-t border-slate-100">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Dia de Recebimento</label>
+            <p class="text-xs text-slate-400 mb-3">Dia do mês em que você recebe seu salário.</p>
+            <input formControlName="payday" type="number" min="1" max="31"
+         class="w-full md:w-1/4 px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all font-bold text-slate-700">
+          </div>
+
           <div class="pt-4 border-t border-slate-100 flex justify-end">
-            <button type="submit" [disabled]="profileForm.invalid" 
+            <button type="submit" [disabled]="profileForm.invalid"
                     class="w-full md:w-auto px-8 py-3 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 transition-all shadow-lg shadow-emerald-100">
               Salvar Dados Pessoais
             </button>

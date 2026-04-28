@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-settings',
@@ -13,18 +14,26 @@ export class SettingsComponent implements OnInit {
   profileForm!: FormGroup;
   showSuccessMessage = false;
 
-  constructor(private fb: FormBuilder) {}
+  constructor(private fb: FormBuilder, private authService: AuthService) {}
 
   ngOnInit() {
-    // Apenas o formulário de Perfil e Renda
     this.profileForm = this.fb.group({
-      name: ['Maria Silva', Validators.required],
-      email: ['maria.silva@email.com', [Validators.required, Validators.email]],
-      monthlySalary: [5000, [Validators.required, Validators.min(1)]]
+      name: ['', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      monthlySalary: [0, [Validators.required, Validators.min(1)]],
+      payday: [null, [Validators.min(1), Validators.max(31)]]
+    });
+
+    this.authService.getMe().subscribe((user) => {
+      this.profileForm.patchValue({
+        name: user.name,
+        email: user.email,
+        monthlySalary: user.salary,
+        payday: user.payday
+      });
     });
   }
 
-  // Getters para a tela atualizar em tempo real
   get currentName(): string {
     return this.profileForm.get('name')?.value || 'Usuário';
   }
@@ -33,19 +42,20 @@ export class SettingsComponent implements OnInit {
     return this.profileForm.get('email')?.value || 'E-mail não informado';
   }
 
-  // Função de Salvar única
-  saveProfile() {
-    if (this.profileForm.valid) {
-      console.log('✅ Perfil salvo no banco de dados:', this.profileForm.value);
-      this.triggerSuccess();
-    }
-  }
+saveProfile() {
+  if (this.profileForm.invalid) return;
 
-  // Dispara o alerta visual verde
+  const { name, email, monthlySalary, payday } = this.profileForm.value;
+
+  this.authService.updateProfile({ name, email }).subscribe();
+  this.authService.updateSalary({ salary: Number(monthlySalary), payday }).subscribe({
+    next: () => this.triggerSuccess(),
+    error: () => alert('Erro ao salvar!')
+  });
+}
+
   private triggerSuccess() {
     this.showSuccessMessage = true;
-    setTimeout(() => {
-      this.showSuccessMessage = false;
-    }, 3000);
+    setTimeout(() => this.showSuccessMessage = false, 3000);
   }
 }

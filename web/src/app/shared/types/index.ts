@@ -1,6 +1,6 @@
 export type MonthYear = string; // Formato YYYY-MM [cite: 191, 366]
 
-export interface MonthProjection { 
+export interface MonthProjection {
   month: MonthYear;
   salary: number;
   totalFixed: number;
@@ -17,7 +17,7 @@ export interface User {
   name: string;
   email: string;
   salary: number;
-  emergencyReserve: number;
+  emergency_reserve: number;
   payday: number;
 }
 
