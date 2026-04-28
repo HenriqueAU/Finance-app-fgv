@@ -1,16 +1,8 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
-
-export interface BuyIntention {
-  id: number;
-  name: string;
-  category: string;
-  value: number;
-  status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  priority: 'ALTA' | 'MEDIA' | 'BAIXA';
-}
+import { IntentionService, Intention } from '../../../core/services/intention.service';
 
 @Component({
   selector: 'app-intentions',
@@ -21,89 +13,137 @@ export interface BuyIntention {
 export class IntentionsComponent implements OnInit {
   intentionForm!: FormGroup;
   showModal = false;
-  editingId: number | null = null;
+  editingId: string | null = null;
+  isLoading = false;
 
-  // Mock com os diferentes status para visualização
-  intentions: BuyIntention[] = [
-    { id: 1, name: 'PlayStation 5 Pro', category: 'Lazer', value: 3500, status: 'PENDING', priority: 'ALTA' },
-    { id: 2, name: 'Sofá Novo', category: 'Moradia', value: 1200, status: 'APPROVED', priority: 'MEDIA' },
-    { id: 3, name: 'Relógio Smart', category: 'Tecnologia', value: 450, status: 'REJECTED', priority: 'BAIXA' },
-  ];
+  intentions: Intention[] = [];
 
-  constructor(private fb: FormBuilder) {}
+  constructor(
+    private fb: FormBuilder,
+    private intentionService: IntentionService,
+    private cdr: ChangeDetectorRef
+  ) {}
 
   ngOnInit() {
     this.initForm();
+    this.loadIntentions();
   }
 
   initForm() {
     this.intentionForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      category: ['', Validators.required],
-      value: ['', [Validators.required, Validators.min(0.01)]],
-      priority: ['MEDIA', Validators.required],
+      description: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
+      categoryId: [null], 
+      installment_amount: ['', [Validators.required, Validators.min(0)]],
+      months: ['', [Validators.required, Validators.min(1), Validators.max(60)]],
+      desired_start_month: ['', [Validators.required, Validators.pattern(/^\d{4}-(0[1-9]|1[0-2])$/)]],
     });
   }
 
-  // Cores dinâmicas para o Status na tabela
-  getStatusClass(status: string): string {
-    const classes = {
-      'PENDING': 'bg-amber-100 text-amber-700 border-amber-200',
-      'APPROVED': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      'REJECTED': 'bg-rose-100 text-rose-700 border-rose-200',
-    };
-    return classes[status as keyof typeof classes] || 'bg-slate-100 text-slate-700';
+  loadIntentions() {
+    this.isLoading = true;
+    this.intentionService.getAll().subscribe({
+      next: (data) => {
+        this.intentions = data;
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Erro ao carregar intenções:', err);
+        this.isLoading = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
-  // Traduções simples para a tela
-  translateStatus(status: string): string {
-    const translation = { 'PENDING': 'Em Análise', 'APPROVED': 'Aprovada', 'REJECTED': 'Reprovada' };
-    return translation[status as keyof typeof translation] || status;
+  updateStatus(id: string, newStatus: 'APPROVED' | 'REJECTED') {
+    const request$ = newStatus === 'APPROVED' 
+      ? this.intentionService.approve(id) 
+      : this.intentionService.postpone(id);
+
+    request$.subscribe({
+      next: () => this.loadIntentions(),
+      error: (err) => console.error('Erro ao atualizar status:', err)
+    });
+  }
+
+  deleteIntention(id: string) {
+    if (confirm('Tem certeza que deseja excluir esta intenção de compra?')) {
+      this.intentionService.remove(id).subscribe({
+        next: () => this.loadIntentions(),
+        error: (err) => console.error('Erro ao excluir:', err)
+      });
+    }
+  }
+
+  onSubmit() {
+    if (this.intentionForm.invalid) return;
+
+    const payload = this.intentionForm.value;
+
+    const request$ = this.editingId
+      ? this.intentionService.update(this.editingId, payload)
+      : this.intentionService.create(payload);
+
+    request$.subscribe({
+      next: () => {
+        this.loadIntentions();
+        this.toggleModal();
+      },
+      error: (err) => console.error('Erro ao salvar intenção:', err)
+    });
   }
 
   toggleModal() {
     this.showModal = !this.showModal;
     if (!this.showModal) {
-      this.intentionForm.reset({ priority: 'MEDIA' });
+      this.intentionForm.reset();
       this.editingId = null;
     }
   }
 
-  // --- MUDANÇA DE STATUS RÁPIDA ---
-  updateStatus(id: number, newStatus: 'APPROVED' | 'REJECTED') {
-    const item = this.intentions.find(i => i.id === id);
-    if (item) {
-      item.status = newStatus;
-    }
-  }
-
-  editIntention(id: number) {
+  editIntention(id: string) {
     const item = this.intentions.find(i => i.id === id);
     if (item) {
       this.editingId = id;
-      this.intentionForm.patchValue(item);
+      
+      // Fix do formato da data para o input do Chrome não quebrar
+      let monthStr = item.desired_start_month;
+      if (monthStr && monthStr.length > 7) {
+        monthStr = monthStr.substring(0, 7);
+      }
+
+      this.intentionForm.patchValue({
+        description: item.description,
+        installment_amount: item.installment_amount,
+        months: item.months,
+        desired_start_month: monthStr,
+        categoryId: item.categoryId
+      });
+      
       this.showModal = true;
     }
   }
 
-  deleteIntention(id: number) {
-    if (confirm('Tem certeza que deseja excluir esta intenção de compra?')) {
-      this.intentions = this.intentions.filter(i => i.id !== id);
-    }
+  getStatusClass(status: string | undefined): string {
+    if (!status) return 'bg-slate-100 text-slate-700';
+    
+    // Força para maiúsculo para evitar bugs de digitação do back-end
+    const safeStatus = status.toUpperCase(); 
+    
+    const classes = {
+      'PENDING': 'bg-amber-100 text-amber-700 border-amber-200', // Voltei pro laranjinha padrão
+      'APPROVED': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      'REJECTED': 'bg-rose-100 text-rose-700 border-rose-200',
+    };
+    return classes[safeStatus as keyof typeof classes] || 'bg-slate-100 text-slate-700';
   }
 
-  onSubmit() {
-    if (this.intentionForm.valid) {
-      if (this.editingId !== null) {
-        // Atualiza, preservando o status que já existia
-        const index = this.intentions.findIndex(i => i.id === this.editingId);
-        this.intentions[index] = { ...this.intentions[index], ...this.intentionForm.value };
-      } else {
-        // Todo desejo novo nasce como "Pendente"
-        const newId = this.intentions.length > 0 ? Math.max(...this.intentions.map(i => i.id)) + 1 : 1;
-        this.intentions.push({ ...this.intentionForm.value, id: newId, status: 'PENDING' });
-      }
-      this.toggleModal();
-    }
+  translateStatus(status: string | undefined): string {
+    if (!status) return 'Desconhecido';
+    
+    const safeStatus = status.toUpperCase();
+    
+    const translation = { 'PENDING': 'Em Análise', 'APPROVED': 'Aprovada', 'REJECTED': 'Reprovada' };
+    return translation[safeStatus as keyof typeof translation] || status;
   }
 }
