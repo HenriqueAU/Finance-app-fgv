@@ -6,15 +6,15 @@ import { FixedExpensesComponent } from './features/fixed-expenses/fixed-expenses
 import { InstallmentsComponent } from './features/installments/installments/installments';
 import { IntentionsComponent } from './features/intentions/intentions/intentions';
 import { SettingsComponent } from './features/settings/settings/settings';
-//import { AuthGuard } from './core/guards/auth.guard'; // <-- Importe o AuthGuard
+import { authGuard } from './core/guards/auth-guard';
 
 export const routes: Routes = [
-  { path: 'login', component: Login }, 
-  { path: 'register', component: Register }, 
-  { path: 'dashboard', component: Dashboard, }, //canActivate: [AuthGuard] }, // <-- Protege a rota do dashboard
-  { path: 'contas-fixas', component: FixedExpensesComponent },
-  { path: 'parcelamentos', component: InstallmentsComponent },
+  { path: 'login', component: Login },
+  { path: 'register', component: Register },
+  { path: 'dashboard', component: Dashboard, canActivate: [authGuard] },
+  { path: 'contas-fixas', component: FixedExpensesComponent, canActivate: [authGuard] },
+  { path: 'parcelamentos', component: InstallmentsComponent, canActivate: [authGuard] },
+  { path: 'intencoes', component: IntentionsComponent, canActivate: [authGuard] },
+  { path: 'configuracoes', component: SettingsComponent, canActivate: [authGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
-  { path: 'intencoes', component: IntentionsComponent },
-  { path: 'configuracoes', component: SettingsComponent }
 ];

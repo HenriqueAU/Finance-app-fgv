@@ -2,14 +2,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
-
-interface Expense {
-  id: number;
-  name: string;
-  category: string;
-  value: number;
-  dueDate: string;
-}
+import { ExpensesService, Expense, CreateExpenseDto } from '../../../core/services/expenses.service';
+import { CategoriesService, Category } from '../../../core/services/categories.service';
 
 @Component({
   selector: 'app-fixed-expenses',
@@ -20,38 +14,64 @@ interface Expense {
 export class FixedExpensesComponent implements OnInit {
   expenseForm!: FormGroup;
   showModal = false;
-  editingId: number | null = null; // Armazena o ID em vez do índice
+  editingId: string | null = null;
 
-  expenses: Expense[] = [
-    { id: 1, name: 'Aluguel', category: 'Moradia', value: 1200, dueDate: '05' },
-    { id: 2, name: 'Plano de Saúde', category: 'Saúde', value: 450, dueDate: '10' },
-    { id: 3, name: 'Netflix', category: 'Lazer', value: 55, dueDate: '15' },
-  ];
+  expenses: Expense[] = [];
+  categories: Category[] = [];
+  isLoading = false;
+  errorMessage = '';
 
-  constructor(private fb: FormBuilder) {}
+  constructor(
+    private fb: FormBuilder,
+    private expensesService: ExpensesService,
+    private categoriesService: CategoriesService
+  ) {}
 
   ngOnInit() {
     this.initForm();
+    this.loadExpenses();
+    this.loadCategories();
   }
 
   initForm() {
     this.expenseForm = this.fb.group({
-      name: ['', [Validators.required, Validators.minLength(3)]],
-      category: ['', Validators.required],
-      value: ['', [Validators.required, Validators.min(0.01)]],
-      dueDate: ['', [Validators.required, Validators.min(1), Validators.max(31)]],
+      description: ['', [Validators.required, Validators.minLength(3)]],
+      amount: ['', [Validators.required, Validators.min(0.01)]],
+      categoryId: [null],
+      due_day: [null, [Validators.min(1), Validators.max(31)]],
     });
   }
 
-  getCategoryClass(category: string): string {
-    const colors: { [key: string]: string } = {
-      'Moradia': 'bg-blue-100 text-blue-700 border-blue-200',
-      'Saúde': 'bg-red-100 text-red-700 border-red-200',
-      'Lazer': 'bg-purple-100 text-purple-700 border-purple-200',
-      'Tecnologia': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      'Outros': 'bg-slate-100 text-slate-700 border-slate-200'
+  loadExpenses() {
+    this.isLoading = true;
+    this.expensesService.getAll().subscribe({
+      next: (data) => {
+        console.log('expenses:', data);
+        this.expenses = [...data];
+        this.isLoading = false;
+      },
+      error: (_) => {
+        console.error('erro:', _);
+        this.errorMessage = 'Erro ao carregar contas fixas.';
+        this.isLoading = false;
+      }
+    });
+  }
+
+  loadCategories() {
+    this.categoriesService.getAll().subscribe({
+      next: (data) => this.categories = data,
+      error: () => {} // silencioso, categoria é opcional
+    });
+  }
+
+  getCategoryStyle(color: string | undefined): { [key: string]: string } {
+    if (!color) return {};
+    return {
+      'background-color': color + '22', // ~13% opacity
+      'color': color,
+      'border-color': color + '55'
     };
-    return colors[category] || colors['Outros'];
   }
 
   toggleModal() {
@@ -59,38 +79,51 @@ export class FixedExpensesComponent implements OnInit {
     if (!this.showModal) {
       this.expenseForm.reset();
       this.editingId = null;
+      this.errorMessage = '';
     }
   }
 
-  // --- EDITAR POR ID ---
-  editExpense(id: number) {
-    const item = this.expenses.find(e => e.id === id);
-    if (item) {
-      this.editingId = id;
-      this.expenseForm.patchValue(item);
-      this.showModal = true;
-    }
+  editExpense(expense: Expense) {
+    this.editingId = expense.id;
+    this.expenseForm.patchValue({
+      description: expense.description,
+      amount: expense.amount,
+      categoryId: expense.category?.id ?? null,
+      due_day: expense.due_day,
+    });
+    this.showModal = true;
   }
 
-  // --- EXCLUIR POR ID ---
-  deleteExpense(id: number) {
+  deleteExpense(id: string) {
     if (confirm('Tem certeza que deseja excluir esta conta?')) {
-      this.expenses = this.expenses.filter(e => e.id !== id);
+      this.expensesService.remove(id).subscribe({
+        next: () => this.loadExpenses(), // idem
+        error: () => this.errorMessage = 'Erro ao excluir conta.'
+      });
     }
+  }
+
+  toggleActive(expense: Expense) {
+    this.expensesService.toggle(expense.id).subscribe({
+      next: () => this.loadExpenses(), // idem
+      error: () => this.errorMessage = 'Erro ao alternar status.'
+    });
   }
 
   onSubmit() {
-    if (this.expenseForm.valid) {
-      if (this.editingId !== null) {
-        // Atualiza o item existente
-        const index = this.expenses.findIndex(e => e.id === this.editingId);
-        this.expenses[index] = { ...this.expenseForm.value, id: this.editingId };
-      } else {
-        // Cria um novo com um ID falso (simulando o banco)
-        const newId = this.expenses.length > 0 ? Math.max(...this.expenses.map(e => e.id)) + 1 : 1;
-        this.expenses.push({ ...this.expenseForm.value, id: newId });
-      }
-      this.toggleModal();
-    }
+    if (this.expenseForm.invalid) return;
+    const dto: CreateExpenseDto = this.expenseForm.value;
+
+    const request$ = this.editingId
+      ? this.expensesService.update(this.editingId, dto)
+      : this.expensesService.create(dto);
+
+    request$.subscribe({
+      next: () => {
+        this.loadExpenses(); // recarrega do back em vez de manipular o array
+        this.toggleModal();
+      },
+        error: () => this.errorMessage = 'Erro ao salvar conta.'
+    });
   }
 }
