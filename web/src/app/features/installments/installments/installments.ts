@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
@@ -20,6 +20,8 @@ interface Installment {
   templateUrl: './installments.html'
 })
 export class InstallmentsComponent implements OnInit {
+  @ViewChild(SidebarComponent) sidebar!: SidebarComponent;
+
   installmentForm!: FormGroup;
   showModal = false;
   editingId: string | null = null;
@@ -133,4 +135,30 @@ export class InstallmentsComponent implements OnInit {
       this.showModal = true;
     }
   }
+
+  deleteInstallment(id: number) {
+    if (confirm('Deseja remover este parcelamento?')) {
+      this.installments = this.installments.filter(i => i.id !== id);
+    }
+  }
+
+  onSubmit() {
+    if (this.installmentForm.valid) {
+      if (this.editingId !== null) {
+        const index = this.installments.findIndex(i => i.id === this.editingId);
+        this.installments[index] = { ...this.installmentForm.value, id: this.editingId };
+      } else {
+        const newId = this.installments.length > 0 ? Math.max(...this.installments.map(i => i.id)) + 1 : 1;
+        this.installments.push({ ...this.installmentForm.value, id: newId });
+      }
+      this.toggleModal();
+    }
+  }
+
+  toggleSidebar(): void {
+    if (this.sidebar) {
+      this.sidebar.toggleSidebar();
+    }
+  }
+
 }

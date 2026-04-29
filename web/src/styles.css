@@ -1,3 +1,19 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply transition-colors duration-300 ease-in-out;
+  }
+}
+
+/* Definição de cores para fácil manutenção */
+:root {
+  --sidebar-width: 280px;
+}
+
+.dark {
+  background-color: #050505;
+  color: #ffffff;
+}

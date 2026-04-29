@@ -7,6 +7,7 @@ import { InstallmentsComponent } from './features/installments/installments/inst
 import { IntentionsComponent } from './features/intentions/intentions/intentions';
 import { SettingsComponent } from './features/settings/settings/settings';
 import { authGuard } from './core/guards/auth-guard';
+import { CreditCardsComponent } from './features/credit-cards/credit-cards/credit-cards';
 
 export const routes: Routes = [
   { path: 'login', component: Login },
@@ -15,6 +16,7 @@ export const routes: Routes = [
   { path: 'contas-fixas', component: FixedExpensesComponent, canActivate: [authGuard] },
   { path: 'parcelamentos', component: InstallmentsComponent, canActivate: [authGuard] },
   { path: 'intencoes', component: IntentionsComponent, canActivate: [authGuard] },
+  { path: 'cartoes', component: CreditCardsComponent, canActivate: [authGuard] },
   { path: 'configuracoes', component: SettingsComponent, canActivate: [authGuard] },
   { path: '', redirectTo: '/login', pathMatch: 'full' },
 ];

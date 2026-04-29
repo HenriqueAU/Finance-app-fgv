@@ -1,79 +1,142 @@
-<div class="flex h-screen w-full bg-slate-50 font-sans">
-
+<div class="min-h-screen bg-slate-50 dark:bg-[#050505] transition-colors duration-300 font-sans flex flex-col">
   <app-sidebar></app-sidebar>
 
-  <main class="flex-1 h-screen overflow-y-auto p-8">
+  <nav class="fixed top-0 left-0 right-0 h-20 bg-slate-50/80 dark:bg-[#050505]/80 backdrop-blur-md border-b border-slate-200 dark:border-white/5 z-40 flex items-center px-6 gap-5 transition-all">
+    
+    <button (click)="toggleSidebar()" class="p-2 -ml-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-emerald-500 hover:bg-slate-200/50 dark:hover:bg-white/5 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+      <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+      </svg>
+    </button>
 
-    <header class="mb-8 flex justify-between items-end">
-      <div>
-        <h1 class="text-2xl font-extrabold text-slate-800">Dashboard - Resumo Mensal</h1>
-        <p class="text-sm text-slate-500 mt-1">Acompanhe sua saúde financeira e projeções</p>
-      </div>
-    </header>
+    <div class="flex flex-col justify-center translate-y-[10px]">
+      <h1 class="text-xl md:text-3xl font-black tracking-tighter text-slate-900 dark:text-white uppercase leading-none">
+        Dashboard <span class="text-slate-400 dark:text-slate-600 font-medium">- Resumo</span>
+      </h1>
+      <p class="text-[9px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-widest mt-1">Gestão de capital e cartões</p>
+    </div>
+  </nav>
 
+  <main class="pt-24 p-6 max-w-[1600px] mx-auto w-full overflow-x-hidden flex-1 flex flex-col">
+    
     @if (isLoading) {
-      <div class="flex flex-col items-center justify-center h-64 text-slate-500 gap-4">
-        <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        <span class="font-medium">Calculando suas finanças...</span>
+      <div class="flex flex-col items-center justify-center flex-1 text-slate-500 gap-4">
+        <div class="animate-spin h-8 w-8 border-4 border-emerald-500 border-t-transparent rounded-full"></div>
+        <span class="text-sm font-bold tracking-tight">Carregando dados...</span>
       </div>
-    }
+    } @else if (current) {
+      
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 shrink-0">
+        
+        <article class="relative bg-white dark:bg-[#0a0a0a] p-5 rounded-[24px] overflow-hidden flex flex-col items-center justify-center min-h-[130px] border border-slate-200 dark:border-white/5">
+          <div class="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-emerald-500/10 to-emerald-500"></div>
+          <span class="flex items-center gap-1.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span> Salário Mensal
+          </span>
+          <p class="text-3xl font-black tracking-tighter text-emerald-500">{{ current.salary | currency:'BRL' }}</p>
+        </article>
 
-    @else if (current) {
-
-      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-in fade-in duration-700">
-
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
-          <h3 class="text-slate-500 font-medium text-sm">Salário Mensal</h3>
-          <div class="flex-1 flex items-center justify-center py-4">
-            <p class="text-3xl font-bold text-emerald-600">{{ current.salary | currency:'BRL' }}</p>
-          </div>
-        </div>
-
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
-          <h3 class="text-slate-500 font-medium text-sm">Total Comprometido</h3>
-          <div class="flex-1 flex flex-col items-center justify-center py-2">
-            <p class="text-3xl font-bold text-slate-800">{{ current.totalFixed + current.totalInstallments + current.totalIntentions | currency:'BRL' }}</p>
-            <div class="text-xs text-slate-500 mt-2 flex flex-col gap-1 items-center text-center">
-              <p>Fixas: <span class="font-medium text-slate-700">{{ current.totalFixed | currency:'BRL' }}</span></p>
-              <p>Parcelas: <span class="font-medium text-slate-700">{{ current.totalInstallments | currency:'BRL' }}</span></p>
-              <p>Intenções: <span class="font-medium text-slate-700">{{ current.totalIntentions | currency:'BRL' }}</span></p>
+        <article class="relative bg-white dark:bg-[#0a0a0a] p-5 rounded-[24px] overflow-hidden flex flex-col items-center justify-center min-h-[130px] border border-slate-200 dark:border-white/5">
+          <div class="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-rose-500/10 to-rose-500"></div>
+          <span class="flex items-center gap-1.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.8)]"></span> Comprometido
+          </span>
+          <p class="text-3xl font-black tracking-tighter text-slate-800 dark:text-white mb-2">{{ current.totalFixed + current.totalInstallments + current.totalIntentions | currency:'BRL' }}</p>
+          
+          <div class="w-full max-w-[200px] text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider space-y-1">
+            <div class="flex justify-between items-center">
+              <span>Fixas:</span> <span class="text-slate-800 dark:text-white">{{ current.totalFixed | currency:'BRL' }}</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>Parcelas:</span> <span class="text-slate-800 dark:text-white">{{ current.totalInstallments | currency:'BRL' }}</span>
             </div>
           </div>
+        </article>
+
+        <article class="relative bg-white dark:bg-[#0a0a0a] p-5 rounded-[24px] overflow-hidden flex flex-col items-center justify-center min-h-[130px] border border-slate-200 dark:border-white/5">
+          <div class="absolute inset-x-0 bottom-0 h-1 bg-gradient-to-r from-blue-500/10 to-blue-500"></div>
+          <span class="flex items-center gap-1.5 text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span> Reserva de Emergência
+          </span>
+          <p class="text-3xl font-black tracking-tighter text-slate-800 dark:text-white">{{ current.emergencyReserve | currency:'BRL' }}</p>
+        </article>
+
+        <article class="relative bg-emerald-50 dark:bg-gradient-to-br dark:from-[#064e3b] dark:to-[#022c22] p-5 rounded-[24px] overflow-hidden flex flex-col items-center justify-center min-h-[130px] border border-emerald-100 dark:border-[#065f46]">
+          <span class="flex items-center gap-1.5 text-[10px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-widest mb-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]"></span> Saldo Livre
+          </span>
+          <p class="text-3xl font-black tracking-tighter text-emerald-700 dark:text-[#a7f3d0]">{{ current.freeToSpend | currency:'BRL' }}</p>
+        </article>
+
+      </section>
+
+      <section class="mb-6 shrink-0">
+        <div class="flex items-center justify-between mb-3 px-1">
+          <h3 class="text-sm font-black tracking-tighter text-slate-900 dark:text-white uppercase">Meus Cartões</h3>
         </div>
 
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
-          <h3 class="text-slate-500 font-medium text-sm">Reserva de Emergência</h3>
-          <div class="flex-1 flex items-center justify-center py-4">
-            <p class="text-3xl font-bold text-slate-600">{{ current.emergencyReserve | currency:'BRL' }}</p>
-          </div>
-        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          @for (card of creditCards; track card.id) {
+            <article class="bg-white dark:bg-[#121212] p-5 rounded-[24px] border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
+              <div class="relative z-10 flex flex-col h-full justify-between gap-4">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <h4 class="text-base font-black text-slate-900 dark:text-white tracking-tight uppercase">{{ card.name }}</h4>
+                  </div>
+                  <div class="px-2 py-0.5 bg-slate-100 dark:bg-white/5 rounded">
+                    <span class="text-[9px] font-black text-slate-400 uppercase italic">Credit</span>
+                  </div>
+                </div>
 
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full border-b-4 border-b-emerald-500">
-          <h3 class="text-slate-500 font-medium text-sm">Saldo Livre para Gastar</h3>
-          <div class="flex-1 flex items-center justify-center py-4">
-            <p class="text-3xl font-bold text-emerald-600">{{ current.freeToSpend | currency:'BRL' }}</p>
-          </div>
+                <div class="space-y-1.5">
+                  <div class="flex justify-between text-[10px] font-black uppercase">
+                    <span class="text-slate-400">Em uso</span>
+                    <span [class]="getUsageColor(card.usagePercentage)">{{ card.usagePercentage }}%</span>
+                  </div>
+                  <div class="h-1.5 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden">
+                    <div class="h-full transition-all duration-1000 ease-out" 
+                         [style.width.%]="card.usagePercentage"
+                         [class]="getProgressBarColor(card.usagePercentage)"></div>
+                  </div>
+                </div>
+
+                <div class="flex justify-between items-end mt-1">
+                  <div>
+                    <p class="text-[9px] uppercase font-black text-slate-400 mb-0.5">Disponível</p>
+                    <p class="text-xl font-black text-emerald-500 tracking-tighter">{{ card.available | currency:'BRL' }}</p>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-[9px] uppercase font-black text-slate-400 mb-0.5">Total</p>
+                    <p class="text-xs font-bold text-slate-600 dark:text-slate-400">{{ card.limit | currency:'BRL' }}</p>
+                  </div>
+                </div>
+              </div>
+            </article>
+          }
+
+          @if (creditCards.length === 0) {
+            <div class="col-span-full py-6 text-center text-slate-500 dark:text-slate-400 text-sm font-medium">
+              Nenhum cartão cadastrado.
+            </div>
+          }
         </div>
       </section>
 
-      <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm col-span-1 h-96 flex flex-col">
-          <h3 class="text-slate-800 font-bold text-lg mb-4 text-center">Composição de Gastos</h3>
-          <div class="flex-1 relative">
-            <canvas baseChart [data]="doughnutChartData" [options]="doughnutChartOptions" type="doughnut"></canvas>
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
+        <div class="bg-white dark:bg-[#121212] p-5 rounded-[24px] border border-slate-200 dark:border-white/5 lg:col-span-1 h-[260px] flex flex-col relative">
+          <h3 class="text-slate-800 dark:text-white font-black tracking-tight text-sm mb-2 text-center uppercase">Composição</h3>
+          <div class="flex-1 relative w-full h-full min-h-0">
+            <canvas baseChart [data]="pieChartData" [options]="pieChartOptions" type="pie"></canvas>
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm col-span-2 h-96 flex flex-col">
-          <h3 class="text-slate-800 font-bold text-lg mb-4">Projeção 3 Meses Futuros</h3>
-          <div class="flex-1 relative">
+        <div class="bg-white dark:bg-[#121212] p-5 rounded-[24px] border border-slate-200 dark:border-white/5 lg:col-span-2 h-[260px] flex flex-col relative">
+          <h3 class="text-slate-800 dark:text-white font-black tracking-tight text-sm mb-2 uppercase">Projeção Futura</h3>
+          <div class="flex-1 relative w-full h-full min-h-0">
             <canvas baseChart [data]="barChartData" [options]="barChartOptions" type="bar"></canvas>
           </div>
         </div>
-
       </section>
     }
-
   </main>
 </div>
