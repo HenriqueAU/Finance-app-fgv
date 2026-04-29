@@ -1,13 +1,13 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
 
-interface Installment {
+export interface Installment {
   id: number;
   name: string;
   category: string;
-  monthlyValue: number; // Agora focamos apenas no valor da parcela
+  monthlyValue: number; // Foco no valor da parcela
   currentParcel: number;
   totalParcels: number;
 }
@@ -19,6 +19,8 @@ interface Installment {
   templateUrl: './installments.html'
 })
 export class InstallmentsComponent implements OnInit {
+  @ViewChild(SidebarComponent) sidebar!: SidebarComponent;
+
   installmentForm!: FormGroup;
   showModal = false;
   editingId: number | null = null;
@@ -84,4 +86,11 @@ export class InstallmentsComponent implements OnInit {
       this.toggleModal();
     }
   }
+
+  toggleSidebar(): void {
+    if (this.sidebar) {
+      this.sidebar.toggleSidebar();
+    }
+  }
+
 }
