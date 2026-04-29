@@ -1,0 +1,79 @@
+<div class="flex h-screen w-full bg-slate-50 font-sans">
+
+  <app-sidebar></app-sidebar>
+
+  <main class="flex-1 h-screen overflow-y-auto p-8">
+
+    <header class="mb-8 flex justify-between items-end">
+      <div>
+        <h1 class="text-2xl font-extrabold text-slate-800">Dashboard - Resumo Mensal</h1>
+        <p class="text-sm text-slate-500 mt-1">Acompanhe sua saúde financeira e projeções</p>
+      </div>
+    </header>
+
+    @if (isLoading) {
+      <div class="flex flex-col items-center justify-center h-64 text-slate-500 gap-4">
+        <svg class="animate-spin h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <span class="font-medium">Calculando suas finanças...</span>
+      </div>
+    }
+
+    @else if (current) {
+
+      <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-in fade-in duration-700">
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
+          <h3 class="text-slate-500 font-medium text-sm">Salário Mensal</h3>
+          <div class="flex-1 flex items-center justify-center py-4">
+            <p class="text-3xl font-bold text-emerald-600">{{ current.salary | currency:'BRL' }}</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
+          <h3 class="text-slate-500 font-medium text-sm">Total Comprometido</h3>
+          <div class="flex-1 flex flex-col items-center justify-center py-2">
+            <p class="text-3xl font-bold text-slate-800">{{ current.totalFixed + current.totalInstallments + current.totalIntentions | currency:'BRL' }}</p>
+            <div class="text-xs text-slate-500 mt-2 flex flex-col gap-1 items-center text-center">
+              <p>Fixas: <span class="font-medium text-slate-700">{{ current.totalFixed | currency:'BRL' }}</span></p>
+              <p>Parcelas: <span class="font-medium text-slate-700">{{ current.totalInstallments | currency:'BRL' }}</span></p>
+              <p>Intenções: <span class="font-medium text-slate-700">{{ current.totalIntentions | currency:'BRL' }}</span></p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
+          <h3 class="text-slate-500 font-medium text-sm">Reserva de Emergência</h3>
+          <div class="flex-1 flex items-center justify-center py-4">
+            <p class="text-3xl font-bold text-slate-600">{{ current.emergencyReserve | currency:'BRL' }}</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full border-b-4 border-b-emerald-500">
+          <h3 class="text-slate-500 font-medium text-sm">Saldo Livre para Gastar</h3>
+          <div class="flex-1 flex items-center justify-center py-4">
+            <p class="text-3xl font-bold text-emerald-600">{{ current.freeToSpend | currency:'BRL' }}</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 pb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm col-span-1 h-96 flex flex-col">
+          <h3 class="text-slate-800 font-bold text-lg mb-4 text-center">Composição de Gastos</h3>
+          <div class="flex-1 relative">
+            <canvas baseChart [data]="doughnutChartData" [options]="doughnutChartOptions" type="doughnut"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm col-span-2 h-96 flex flex-col">
+          <h3 class="text-slate-800 font-bold text-lg mb-4">Projeção 3 Meses Futuros</h3>
+          <div class="flex-1 relative">
+            <canvas baseChart [data]="barChartData" [options]="barChartOptions" type="bar"></canvas>
+          </div>
+        </div>
+
+      </section>
+    }
+
+  </main>
+</div>

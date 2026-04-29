@@ -18,7 +18,7 @@ export class Installment {
   user!: User;
 
   @ManyToOne(() => Category, { nullable: true })
-  category!: Category | null;
+  category?: Category;
 
   @ManyToOne(() => CreditCard, { nullable: true })
   credit_card!: CreditCard | null;

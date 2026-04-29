@@ -1,0 +1,50 @@
+<div class="min-h-screen bg-slate-50 flex items-center justify-center p-4 py-12">
+  <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-10 border border-slate-100">
+    <div class="text-center mb-10">
+      <h2 class="text-3xl font-extrabold text-slate-900">Crie sua Conta</h2>
+      <p class="text-slate-500 mt-2 text-sm uppercase tracking-widest font-semibold">Configuração Financeira (MVP)</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Nome Completo</label>
+        <input [(ngModel)]="form.name" class="w-full p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">E-mail</label>
+        <input [(ngModel)]="form.email" type="email" class="w-full p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Senha</label>
+        <input [(ngModel)]="form.password" type="password" class="w-full p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-blue-500">
+      </div>
+
+      <div class="md:col-span-2 border-t border-slate-100 pt-4 mt-2">
+        <p class="text-blue-600 font-bold text-xs">DADOS PARA PROJEÇÃO [cite: 14]</p>
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1 text-green-700">Salário Mensal (R$)</label>
+        <input [(ngModel)]="form.salary" type="number" class="w-full p-3 rounded-xl border border-green-200 bg-green-50 focus:ring-2 focus:ring-green-500 outline-none">
+      </div>
+
+      <div>
+        <label class="block text-sm font-semibold text-slate-700 mb-1">Dia de Recebimento</label>
+        <input [(ngModel)]="form.payday" type="number" min="1" max="31" class="w-full p-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none">
+      </div>
+
+      <div class="md:col-span-2">
+        <label class="block text-sm font-semibold text-slate-700 mb-1 text-red-700">Reserva de Emergência Alvo (R$)</label>
+        <input [(ngModel)]="form.emergency_reserve" type="number" class="w-full p-3 rounded-xl border border-red-100 bg-red-50 focus:ring-2 focus:ring-red-500 outline-none">
+        <p class="text-[10px] text-slate-400 mt-2 italic">*Critério para alerta de meses críticos no sistema. [cite: 20]</p>
+      </div>
+    </div>
+
+    <button (click)="handleRegister()"
+            class="w-full mt-10 bg-slate-900 hover:bg-black text-white font-bold py-4 rounded-xl shadow-lg transition-all active:scale-[0.98]">
+      Finalizar Cadastro
+    </button>
+  </div>
+</div>
