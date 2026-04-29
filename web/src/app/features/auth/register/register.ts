@@ -15,13 +15,12 @@ export class Register {
   constructor(private authService: AuthService, private router: Router) {}
 
   handleRegister() {
-    const {payday, ...body} = this.form
-    this.authService.register(body).subscribe({
-      next: () => {
-        alert('Conta criada!');
-        this.router.navigate(['/login']);
-      },
-      error: () => alert('Erro no cadastro!')
+    this.authService.register(this.form).subscribe({
+    next: () => {
+      alert('Conta criada!');
+      this.router.navigate(['/login']);
+    },
+    error: () => alert('Erro no cadastro!')
     });
   }
 }

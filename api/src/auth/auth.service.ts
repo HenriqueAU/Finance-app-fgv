@@ -35,6 +35,7 @@ export class AuthService {
       email: dto.email,
       password_hash,
       salary: dto.salary,
+      payday: dto.payday,
       emergency_reserve: dto.emergency_reserve,
     });
 

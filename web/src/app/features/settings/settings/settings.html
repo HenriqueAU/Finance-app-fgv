@@ -18,8 +18,8 @@
       </div>
     </header>
 
-    <div class="max-w-4xl">
-
+    <div class="max-w-4xl pb-16">
+      
       <section class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 p-8">
 
         <div class="flex items-center gap-4 mb-8">
@@ -61,8 +61,14 @@
           <div class="pt-4 border-t border-slate-100">
             <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Dia de Recebimento</label>
             <p class="text-xs text-slate-400 mb-3">Dia do mês em que você recebe seu salário.</p>
-            <input formControlName="payday" type="number" min="1" max="31"
-         class="w-full md:w-1/4 px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all font-bold text-slate-700">
+            <input formControlName="payday" type="number" min="1" max="31"class="w-full md:w-1/4 px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all font-bold text-slate-700">
+          </div>
+
+          <div class="pt-4 border-t border-slate-100">
+            <label class="block text-xs font-bold text-amber-600 uppercase mb-2">Reserva Financeira / Economias (R$)</label>
+            <p class="text-xs text-slate-400 mb-3">Saldo atual guardado para emergências ou investimentos.</p>
+            <input formControlName="savings" type="number"
+                   class="w-full md:w-1/2 px-4 py-3 rounded-xl border border-amber-200 bg-amber-50/30 focus:border-amber-500 focus:bg-white outline-none transition-all font-bold text-slate-700">
           </div>
 
           <div class="pt-4 border-t border-slate-100 flex justify-end">
@@ -73,6 +79,38 @@
           </div>
 
         </form>
+      </section>
+
+      <section class="bg-white rounded-3xl border border-slate-200 shadow-xl shadow-slate-100 p-8 mt-8">
+        <h3 class="text-lg font-bold text-slate-800 mb-4">Segurança</h3>
+        <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="flex flex-col gap-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Senha Atual</label>
+              <input formControlName="current_password" type="password"
+                     class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nova Senha</label>
+              <input formControlName="new_password" type="password" placeholder="Mínimo de 6 caracteres"
+                     class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all">
+            </div>
+          </div>
+          <div class="flex justify-end">
+            <button type="submit" [disabled]="passwordForm.invalid"
+                    class="w-full md:w-auto px-8 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 transition-all shadow-lg shadow-blue-100">
+              Alterar Senha
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="bg-red-50 rounded-3xl border border-red-200 shadow-xl shadow-red-100 p-8 mt-8">
+        <h3 class="text-lg font-bold text-red-800 mb-2">Zona de Perigo</h3>
+        <p class="text-sm text-red-600 mb-6">Ao deletar sua conta, você perderá permanentemente todos os seus dados, compras, investimentos e contas a pagar. <strong>Esta ação não poderá ser desfeita.</strong></p>
+        <button (click)="deleteAccount()" class="w-full md:w-auto px-8 py-3 rounded-xl font-bold text-white bg-red-600 hover:bg-red-700 transition-all shadow-lg shadow-red-200">
+          Deletar Minha Conta
+        </button>
       </section>
 
     </div>
