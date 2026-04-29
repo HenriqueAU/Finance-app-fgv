@@ -8,6 +8,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Category } from '../../categories/entities/category.entity';
 import { CreditCard } from '../../credit-cards/entities/credit-card.entity';
+import { InstallmentType } from 'src/shared/types';
 
 @Entity('installments')
 export class Installment {
@@ -34,6 +35,9 @@ export class Installment {
 
   @Column()
   start_month!: string;
+
+  @Column({ type: 'varchar', default: 'regular' })
+  type!: InstallmentType;
 
   @CreateDateColumn()
   created_at!: Date;
