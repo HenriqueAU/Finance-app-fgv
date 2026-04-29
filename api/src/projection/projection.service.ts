@@ -1,7 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { ExpensesService } from '../expenses/expenses.service';
 import { InstallmentsService } from '../installments/installments.service';
 import { UsersService } from '../users/users.service';
+import { SnapshotsService } from '../snapshots/snapshots.service';
+import { CreditCardsService } from '../credit-cards/credit-cards.service';
 import { MonthProjection } from '../shared/types';
 
 @Injectable()
@@ -10,6 +12,9 @@ export class ProjectionService {
     private readonly expensesService: ExpensesService,
     private readonly installmentsService: InstallmentsService,
     private readonly usersService: UsersService,
+    @Inject(forwardRef(() => SnapshotsService))
+    private readonly snapshotsService: SnapshotsService,
+    private readonly creditCardsService: CreditCardsService,
   ) {}
 
   async getMonthProjection(
@@ -33,22 +38,52 @@ export class ProjectionService {
     const emergencyReserve = Number(user.emergency_reserve) || 0;
     const savings = Number(user.savings) || 0;
 
-    const available = user.salary - totalFixed - totalInstallments;
-    const freeToSpend = available - user.emergency_reserve;
+    // payday — salário só entra no dia definido
+    const today = new Date();
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+    const salaryThisMonth =
+      month === currentMonth &&
+      user.payday !== null &&
+      today.getDate() < user.payday
+        ? 0
+        : salary;
+
+    // snapshot do mês anterior
+    const snapshot = await this.snapshotsService.findCurrent(userId);
+    const snapshotValue = snapshot ? Number(snapshot.free_to_spend) : 0;
+
+    // card debt — soma totalOwed de todos os cartões
+    const creditCards = await this.creditCardsService.findAll(userId);
+    const cardDebts = await Promise.all(
+      creditCards.map((card) =>
+        this.creditCardsService.getUsage(card.id, userId, month),
+      ),
+    );
+    const cardDebt = cardDebts.reduce((sum, usage) => sum + usage.totalOwed, 0);
+
+    const available = salaryThisMonth - totalFixed - totalInstallments;
+    const freeToSpend =
+      snapshotValue +
+      salaryThisMonth +
+      savings -
+      totalFixed -
+      totalInstallments -
+      emergencyReserve -
+      cardDebt;
 
     return {
       month,
-      salary,
+      salary: salaryThisMonth,
       totalFixed,
       totalInstallments,
       totalIntentions: 0,
       available,
       emergencyReserve,
+      snapshot: snapshotValue,
+      savings,
+      cardDebt,
       freeToSpend,
       isCritical: freeToSpend < 0,
-      savings: savings,
-      snapshot: 0,
-      cardDebt: 0,
     };
   }
 

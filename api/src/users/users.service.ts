@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -44,6 +48,10 @@ export class UsersService {
     return this.sanitizeUser(user);
   }
 
+  async findAll(): Promise<User[]> {
+    return this.userRepository.find();
+  }
+
   async updateEmergencyReserve(id: string, dto: UpdateEmergencyReserveDto) {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
@@ -55,7 +63,7 @@ export class UsersService {
   async updateSavings(id: string, dto: UpdateSavingsDto) {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
-    
+
     Object.assign(user, dto);
     await this.userRepository.save(user);
     return this.sanitizeUser(user);
@@ -65,7 +73,10 @@ export class UsersService {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
-    const isPasswordValid = await bcrypt.compare(dto.current_password, user.password_hash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.current_password,
+      user.password_hash,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Senha atual incorreta');
     }
@@ -82,7 +93,7 @@ export class UsersService {
     if (!user) throw new NotFoundException('Usuário não encontrado');
 
     await this.userRepository.remove(user);
-    
+
     return { message: 'Conta deletada com sucesso' };
   }
 }

@@ -47,6 +47,32 @@ export class ExpensesController {
     return this.expensesService.toggle(id, req.user.id);
   }
 
+  @Get('payments/:month')
+  getPaymentsByMonth(
+    @Param('month') month: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.expensesService.getPaymentsByMonth(req.user.id, month);
+  }
+
+  @Patch(':id/payments/:month/pay')
+  pay(
+    @Param('id') id: string,
+    @Param('month') month: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.expensesService.pay(id, req.user.id, month);
+  }
+
+  @Patch(':id/payments/:month/unpay')
+  unpay(
+    @Param('id') id: string,
+    @Param('month') month: string,
+    @Request() req: AuthenticatedRequest,
+  ) {
+    return this.expensesService.unpay(id, req.user.id, month);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     return this.expensesService.remove(id, req.user.id);
