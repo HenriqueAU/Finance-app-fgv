@@ -5,5 +5,8 @@ export interface DashboardSummary {
   installments: number;
   approvedIntentions: number;
   emergencyReserve: number;
+  snapshot: number;
+  savings: number;
+  cardDebt: number;
   freeBalance: number;
 }

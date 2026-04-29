@@ -19,6 +19,9 @@ export class User {
   @Column()
   password_hash!: string;
 
+  @Column('decimal', { precision: 10, scale: 2, default: 0 })
+  savings!: number;
+
   @Column('decimal', { precision: 10, scale: 2 })
   emergency_reserve!: number;
 

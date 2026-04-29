@@ -1,4 +1,5 @@
 import {
+  IsEnum,
   IsInt,
   IsNumber,
   IsOptional,
@@ -10,6 +11,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { InstallmentType } from 'src/shared/types';
 
 export class CreateInstallmentDto {
   @IsOptional()
@@ -38,4 +40,8 @@ export class CreateInstallmentDto {
   @Matches(/^\d{4}-(0[1-9]|1[0-2])$/)
   //garante o formato YYYY-MM
   start_month!: string;
+
+  @IsOptional()
+  @IsEnum(['regular', 'outros'])
+  type?: InstallmentType;
 }
