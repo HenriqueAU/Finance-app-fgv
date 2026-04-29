@@ -29,19 +29,26 @@ export class ProjectionService {
       0,
     );
 
+    const salary = Number(user.salary) || 0;
+    const emergencyReserve = Number(user.emergency_reserve) || 0;
+    const savings = Number(user.savings) || 0;
+
     const available = user.salary - totalFixed - totalInstallments;
     const freeToSpend = available - user.emergency_reserve;
 
     return {
       month,
-      salary: user.salary,
+      salary,
       totalFixed,
       totalInstallments,
       totalIntentions: 0,
       available,
-      emergencyReserve: user.emergency_reserve,
+      emergencyReserve,
       freeToSpend,
       isCritical: freeToSpend < 0,
+      savings: savings,
+      snapshot: 0,
+      cardDebt: 0,
     };
   }
 
