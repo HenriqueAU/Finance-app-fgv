@@ -56,7 +56,7 @@ import { CardPayment } from './credit-cards/entities/card-payment.entity';
           CardPayment,
         ],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
-        synchronize: false,
+        synchronize: true,
         migrationsRun: false,
       }),
     }),
