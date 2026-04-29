@@ -19,6 +19,8 @@ import { BuyIntention } from './buy-intentions/entities/buyIntention.entity';
 import { ExpensePayment } from './expenses/entities/expense-payment.entity';
 import { MonthlySnapshot } from './snapshots/entities/monthly-snapshot.entity';
 import { CardPayment } from './credit-cards/entities/card-payment.entity';
+import { ScheduleModule } from '@nestjs/schedule';
+import { SnapshotsModule } from './snapshots/snapshots.module';
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { CardPayment } from './credit-cards/entities/card-payment.entity';
     InstallmentsModule,
     BuyIntentionsModule,
     ProjectionModule,
+    SnapshotsModule,
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot({
       isGlobal: true,
     }),
@@ -56,7 +60,7 @@ import { CardPayment } from './credit-cards/entities/card-payment.entity';
           CardPayment,
         ],
         migrations: [__dirname + '/migrations/*{.ts,.js}'],
-        synchronize: true,
+        synchronize: false,
         migrationsRun: false,
       }),
     }),

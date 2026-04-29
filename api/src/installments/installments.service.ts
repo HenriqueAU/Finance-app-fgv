@@ -18,7 +18,11 @@ export class InstallmentsService {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  private isActiveInMonth(startMonth: string, totalMonths: number, targetMonth: string): boolean {
+  private isActiveInMonth(
+    startMonth: string,
+    totalMonths: number,
+    targetMonth: string,
+  ): boolean {
     const endMonth = this.calculateEndMonth(startMonth, totalMonths);
     return startMonth <= targetMonth && endMonth >= targetMonth;
   }
@@ -53,12 +57,16 @@ export class InstallmentsService {
   async findActive(userId: string) {
     const currentMonth = new Date().toISOString().slice(0, 7);
     const all = await this.findAll(userId);
-    return all.filter((i) => this.isActiveInMonth(i.start_month, i.total_months, currentMonth));
+    return all.filter((i) =>
+      this.isActiveInMonth(i.start_month, i.total_months, currentMonth),
+    );
   }
 
   async findByMonth(userId: string, month: string) {
     const all = await this.findAll(userId);
-    return all.filter((i) => this.isActiveInMonth(i.start_month, i.total_months, month));
+    return all.filter((i) =>
+      this.isActiveInMonth(i.start_month, i.total_months, month),
+    );
   }
 
   async update(id: string, userId: string, dto: UpdateInstallmentDto) {

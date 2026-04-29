@@ -4,12 +4,15 @@ import { Repository } from 'typeorm';
 import { Expense } from './entities/expense.entity';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
+import { ExpensePayment } from './entities/expense-payment.entity';
 
 @Injectable()
 export class ExpensesService {
   constructor(
     @InjectRepository(Expense)
     private readonly expenseRepository: Repository<Expense>,
+    @InjectRepository(ExpensePayment)
+    private readonly expensePaymentRepository: Repository<ExpensePayment>,
   ) {}
 
   async create(userId: string, dto: CreateExpenseDto) {
@@ -74,5 +77,41 @@ export class ExpensesService {
 
     await this.expenseRepository.delete(id);
     return { message: 'Despesa removida com sucesso' };
+  }
+
+  async getPaymentsByMonth(userId: string, month: string) {
+    return this.expensePaymentRepository.find({
+      where: { user: { id: userId }, month },
+      relations: ['expense'],
+    });
+  }
+
+  async pay(expenseId: string, userId: string, month: string) {
+    let payment = await this.expensePaymentRepository.findOne({
+      where: { expense: { id: expenseId }, user: { id: userId }, month },
+    });
+
+    if (!payment) {
+      payment = this.expensePaymentRepository.create({
+        expense: { id: expenseId },
+        user: { id: userId },
+        month,
+        paid_at: null,
+      });
+    }
+
+    payment.paid_at = new Date();
+    return this.expensePaymentRepository.save(payment);
+  }
+
+  async unpay(expenseId: string, userId: string, month: string) {
+    const payment = await this.expensePaymentRepository.findOne({
+      where: { expense: { id: expenseId }, user: { id: userId }, month },
+    });
+
+    if (!payment) throw new NotFoundException('Pagamento não encontrado');
+
+    payment.paid_at = null;
+    return this.expensePaymentRepository.save(payment);
   }
 }
