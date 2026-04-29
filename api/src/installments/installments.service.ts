@@ -18,20 +18,17 @@ export class InstallmentsService {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   }
 
-  private isActiveInMonth(installment: Installment, month: string): boolean {
-    const endMonth = this.calculateEndMonth(
-      installment.start_month,
-      installment.total_months,
-    );
-    return installment.start_month <= month && endMonth >= month;
+  private isActiveInMonth(startMonth: string, totalMonths: number, targetMonth: string): boolean {
+    const endMonth = this.calculateEndMonth(startMonth, totalMonths);
+    return startMonth <= targetMonth && endMonth >= targetMonth;
   }
 
   async create(userId: string, dto: CreateInstallmentDto) {
     const installment = this.installmentRepository.create({
       ...dto,
       user: { id: userId },
-      category: dto.categoryId ? { id: dto.categoryId } : null,
-      credit_card: dto.creditCardId ? { id: dto.creditCardId } : null,
+      category: dto.categoryId ? { id: dto.categoryId } : undefined,
+      credit_card: dto.creditCardId ? { id: dto.creditCardId } : undefined,
     });
 
     const saved = await this.installmentRepository.save(installment);
@@ -56,12 +53,12 @@ export class InstallmentsService {
   async findActive(userId: string) {
     const currentMonth = new Date().toISOString().slice(0, 7);
     const all = await this.findAll(userId);
-    return all.filter((i) => this.isActiveInMonth(i, currentMonth));
+    return all.filter((i) => this.isActiveInMonth(i.start_month, i.total_months, currentMonth));
   }
 
   async findByMonth(userId: string, month: string) {
     const all = await this.findAll(userId);
-    return all.filter((i) => this.isActiveInMonth(i, month));
+    return all.filter((i) => this.isActiveInMonth(i.start_month, i.total_months, month));
   }
 
   async update(id: string, userId: string, dto: UpdateInstallmentDto) {
@@ -95,7 +92,7 @@ export class InstallmentsService {
     if (!installment)
       throw new NotFoundException('Parcelamento não encontrado');
 
-    await this.installmentRepository.delete(id);
+    await this.installmentRepository.remove(installment);
     return { message: 'Parcelamento removido com sucesso' };
   }
 }

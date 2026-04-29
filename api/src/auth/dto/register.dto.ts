@@ -2,8 +2,10 @@ import {
   IsEmail,
   IsNumber,
   IsString,
+  IsInt,
   MaxLength,
   Min,
+  Max,
   MinLength,
 } from 'class-validator';
 
@@ -25,6 +27,11 @@ export class RegisterDto {
   @IsNumber()
   @Min(0)
   salary!: number;
+
+  @IsInt()
+  @Min(1)
+  @Max(31)
+  payday?: number;
 
   @IsNumber()
   @Min(0)

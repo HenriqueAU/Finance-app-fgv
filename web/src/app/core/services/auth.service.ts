@@ -11,16 +11,13 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  // 1. Tiramos o 'any' e colocamos o 'User' (ou Partial<User> se o tipo não tiver senha)
   register(userData: Partial<User>): Observable<User> {
     return this.http.post<User>(`${this.apiUrl}/auth/register`, userData);
   }
 
-  // 2. Tiramos o 'any' e colocamos o 'LoginResponse'
-  login(credentials: { email: string; password: string }): Observable<LoginResponse> { // credentials pode ficar como 'any' ou criar um LoginRequest { email, password }
+  login(credentials: { email: string; password: string }): Observable<LoginResponse> {
     return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, credentials).pipe(
       tap((response: LoginResponse) => {
-        // 3. Ajustado de response.token para response.accessToken
         if (response && response.accessToken) {
           localStorage.setItem('auth_token', response.accessToken);
         }
@@ -46,7 +43,19 @@ export class AuthService {
     return this.http.patch<User>(`${this.apiUrl}/users/me`, data);
   }
 
-  updateSalary(data: { salary?: number; payday?: number }): Observable<User> {
+  updateSalary(data: { salary?: number; payday?: number | null }): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/users/me/salary`, data);
+  }
+
+  updateSavings(data: { savings: number }): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/users/me/savings`, data);
+  }
+
+  updatePassword(data: any): Observable<User> {
+    return this.http.patch<User>(`${this.apiUrl}/users/me/password`, data);
+  }
+
+  deleteAccount(): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/users/me`);
   }
 }

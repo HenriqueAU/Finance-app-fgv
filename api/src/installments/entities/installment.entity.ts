@@ -15,7 +15,7 @@ export class Installment {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   user!: User;
 
   @ManyToOne(() => Category, { nullable: true })

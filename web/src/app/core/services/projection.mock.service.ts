@@ -14,7 +14,10 @@ export class ProjectionService { // Nome igual ao real para facilitar troca no D
       available: 3270,
       emergencyReserve: 500,
       freeToSpend: 2770,
-      isCritical: false
+      isCritical: false,
+      savings: 0,
+      snapshot: 0,
+      cardDebt: 0,
     }); 
   }
 }

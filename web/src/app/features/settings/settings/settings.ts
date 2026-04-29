@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
 import { AuthService } from '../../../core/services/auth.service';
 
@@ -12,16 +13,27 @@ import { AuthService } from '../../../core/services/auth.service';
 })
 export class SettingsComponent implements OnInit {
   profileForm!: FormGroup;
+  passwordForm!: FormGroup;
   showSuccessMessage = false;
 
-  constructor(private fb: FormBuilder, private authService: AuthService) {}
+  constructor(
+    private fb: FormBuilder, 
+    private authService: AuthService,
+    private router: Router
+  ) {}
 
   ngOnInit() {
     this.profileForm = this.fb.group({
       name: ['', Validators.required],
       email: ['', [Validators.required, Validators.email]],
-      monthlySalary: [0, [Validators.required, Validators.min(1)]],
-      payday: [null, [Validators.min(1), Validators.max(31)]]
+      monthlySalary: [0, [Validators.required, Validators.min(0)]],
+      payday: [null, [Validators.min(1), Validators.max(31)]],
+      savings: [0, [Validators.min(0)]]
+    });
+
+    this.passwordForm = this.fb.group({
+      current_password: ['', Validators.required],
+      new_password: ['', [Validators.required, Validators.minLength(6)]]
     });
 
     this.authService.getMe().subscribe((user) => {
@@ -29,9 +41,10 @@ export class SettingsComponent implements OnInit {
         name: user.name,
         email: user.email,
         monthlySalary: user.salary,
-        payday: user.payday
-      });
-    });
+        payday: user.payday,
+        savings: user.savings || 0
+      })
+    })
   }
 
   get currentName(): string {
@@ -43,16 +56,55 @@ export class SettingsComponent implements OnInit {
   }
 
 saveProfile() {
-  if (this.profileForm.invalid) return;
+  if (this.profileForm.invalid) {
+    alert('Formulário inválido! Verifique se todos os campos estão preenchidoscorretamente.');
+    return;
+  }
 
-  const { name, email, monthlySalary, payday } = this.profileForm.value;
+  const { name, email, monthlySalary, payday, savings } = this.profileForm.value;
+  const validPayday = payday ? Number(payday) : null;
 
-  this.authService.updateProfile({ name, email }).subscribe();
-  this.authService.updateSalary({ salary: Number(monthlySalary), payday }).subscribe({
-    next: () => this.triggerSuccess(),
-    error: () => alert('Erro ao salvar!')
+  this.authService.updateProfile({ name, email }).subscribe({
+    next: () => {
+      this.authService.updateSavings({ savings: Number(savings) }).subscribe({
+        next: () => {
+          this.authService.updateSalary({ salary: Number(monthlySalary), payday: validPayday }).subscribe({
+            next: () => this.triggerSuccess(),
+            error: () => alert('Erro ao salvar!')
+          });
+        },
+        error: () => alert('Erro ao salvar as economias.')
+      });
+    },
+    error: () => alert('Erro ao salvar o perfil.')
   });
 }
+
+changePassword() {
+    if (this.passwordForm.invalid) return;
+    
+    this.authService.updatePassword(this.passwordForm.value).subscribe({
+      next: () => {
+        this.triggerSuccess();
+        this.passwordForm.reset();
+      },
+      error: (err) => alert(err.error?.message || 'Erro ao alterar senha. Verifique sua senha atual.')
+    });
+  }
+
+  deleteAccount() {
+    const isSure = confirm('🚨 TEM CERTEZA ABSOLUTA?\n\nIsso apagará permanentemente todos os seus dados e não poderá ser desfeito.');
+    
+    if (isSure) {
+      this.authService.deleteAccount().subscribe({
+        next: () => {
+          this.authService.logout();
+          this.router.navigate(['/login']);
+        },
+        error: () => alert('Erro ao deletar a conta.')
+      });
+    }
+  }
 
   private triggerSuccess() {
     this.showSuccessMessage = true;

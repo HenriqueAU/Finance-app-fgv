@@ -1,8 +1,10 @@
-import { Body, Controller, Patch, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Patch, Delete, Request, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
 import { UpdateEmergencyReserveDto } from './dto/update-emergency-reserve.dto';
+import { UpdateSavingsDto } from './dto/update-savings.dto';
+import { UpdatePasswordDto } from './dto/update-password.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 interface AuthenticatedRequest extends Request {
@@ -36,5 +38,20 @@ export class UsersController {
     @Request() req: AuthenticatedRequest,
   ) {
     return this.usersService.updateEmergencyReserve(req.user.id, dto);
+  }
+
+  @Patch('me/savings')
+  updateSavings(@Body() dto: UpdateSavingsDto, @Request() req: AuthenticatedRequest) {
+    return this.usersService.updateSavings(req.user.id, dto);
+  }
+
+  @Patch('me/password')
+  updatePassword(@Body() dto: UpdatePasswordDto, @Request() req: AuthenticatedRequest) {
+    return this.usersService.updatePassword(req.user.id, dto);
+  }
+
+  @Delete('me')
+  deleteAccount(@Request() req: AuthenticatedRequest) {
+    return this.usersService.deleteAccount(req.user.id);
   }
 }
