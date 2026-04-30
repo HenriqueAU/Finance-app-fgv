@@ -74,6 +74,14 @@ export class DashboardComponent implements OnInit {
   public pieChartOptions: ChartOptions<'pie'> = {
     responsive: true,
     maintainAspectRatio: false,
+    layout: {
+      padding: {
+        top: 10,
+        bottom: 10,
+        left: 20,
+        right: 20
+      }
+    },
     plugins: {
       legend: { position: 'bottom', labels: { padding: 25, usePointStyle: true, pointStyle: 'circle', font: { size: 12, weight: 'bold' }, color: this.colors.slate400 } },
       tooltip: this.getPremiumTooltipSettings()
@@ -182,44 +190,46 @@ export class DashboardComponent implements OnInit {
     });
   // Avisos de vencimento
   this.expensesService.getAll().subscribe({
-    next: (expenses) => {
-      const today = new Date();
-      const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  next: (expenses) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-      this.expensesService.getPaymentsByMonth(currentMonth).subscribe({
-        next: (payments) => {
-          const paidIds = new Set(
-            payments.filter(p => p.paid_at !== null).map((p: any) => p.expense.id)
-          );
+    this.expensesService.getPaymentsByMonth(currentMonth).subscribe({
+      next: (payments) => {
+        const paidIds = new Set(
+          payments.filter(p => p.paid_at !== null).map((p: any) => p.expense.id)
+        );
 
-          this.dueDateAlerts = expenses
-            .filter(e => e.is_active && e.due_day !== null && !paidIds.has(e.id))
-            .map(e => {
-              const dueDate = new Date(today.getFullYear(), today.getMonth(), e.due_day!);
-              const diffDays = Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-              let message = '';
-              let colorClass = '';
+        this.dueDateAlerts = expenses
+          .filter(e => e.is_active && e.due_day !== null && !paidIds.has(e.id))
+          .map(e => {
+            const dueDate = new Date(today.getFullYear(), today.getMonth(), e.due_day!);
+            const diffDays = Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+            
+            let message = '';
+            let colorClass = '';
 
-              if (diffDays === 0) {
-                message = 'Vence hoje';
-                colorClass = 'text-rose-500';
-              } else if (diffDays > 0 && diffDays <= 3) {
-                message = `Faltam ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
-                colorClass = 'text-amber-400';
-              } else if (diffDays < 0) {
-                message = `Venceu há ${Math.abs(diffDays)} dia${Math.abs(diffDays) > 1 ? 's' : ''}`;
-                colorClass = 'text-rose-400';
-              }
+            if (diffDays === 0) {
+              message = 'Vence hoje';
+              colorClass = 'text-rose-500';
+            } else if (diffDays > 0 && diffDays <= 3) {
+              message = `Faltam ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+              colorClass = 'text-amber-400';
+            } else if (diffDays < 0) {
+              message = `Venceu há ${Math.abs(diffDays)} dia${Math.abs(diffDays) > 1 ? 's' : ''}`;
+              colorClass = 'text-rose-400';
+            }
 
-              return message ? { id: e.id, description: e.description, amount: e.amount, message, colorClass } : null;
-            })
-            .filter((a): a is DueDateAlert => a !== null);
+            return message ? { id: e.id, description: e.description, amount: e.amount, message, colorClass } : null;
+          })
+          .filter((a): a is DueDateAlert => a !== null);
 
-          this.cdr.detectChanges();
-        }
-      });
-    }
-  });
+        this.cdr.detectChanges();
+      }
+    });
+  }
+});
 }
 
   recalculateFunds(): void {
