@@ -24,4 +24,7 @@ export class InstallmentsService {
   getCategories(): Observable<any[]> {
     return this.http.get<any[]>(this.categoriesUrl);
   }
+  updateInstallment(id: string, data: any): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/${id}`, data);
+  }
 }

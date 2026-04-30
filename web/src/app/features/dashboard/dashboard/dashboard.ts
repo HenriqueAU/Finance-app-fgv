@@ -3,10 +3,20 @@ import { CommonModule } from '@angular/common';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartData, ChartOptions, Chart } from 'chart.js';
-import { MonthProjection } from '../../../shared/types';
+import { MonthProjection, MonthlySnapshot } from '../../../shared/types';
 import { ProjectionService } from '../../../core/services/projection';
-// Importação apontando para a pasta correta no core
-import { CreditCardService, CreditCardUsage } from '../../../core/services/credit-cards.service';
+import { CreditCard, CreditCardService, CreditCardUsage } from '../../../core/services/credit-cards.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { SnapshotsService } from '../../../core/services/snapshot.services';
+import { ExpensesService, Expense } from '../../../core/services/expenses.service';
+
+interface DueDateAlert {
+  id: string;
+  description: string;
+  amount: number;
+  message: string;
+  colorClass: string;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -22,18 +32,31 @@ export class DashboardComponent implements OnInit {
   creditCards: CreditCardUsage[] = [];
   isLoading: boolean = true;
 
+  // Fundos disponíveis
+  snapshot: MonthlySnapshot | null = null;
+  userSavings: number = 0;
+  userSalary: number = 0;
+  userPayday: number | null = null;
+  salaryAlreadyEntered: boolean = false;
+  totalAvailableFunds: number = 0;
+
+  dueDateAlerts: DueDateAlert[] = [];
+  showAlerts = true;
   private colors = {
     rose: '#f43f5e',
     blue: '#3b82f6',
     emerald: '#10b981',
-    slate400: '#94a3b8', 
+    slate400: '#94a3b8',
     white: '#ffffff'
   };
 
   constructor(
-    private cdr: ChangeDetectorRef, 
+    private cdr: ChangeDetectorRef,
     private projectionService: ProjectionService,
-    private creditCardService: CreditCardService
+    private creditCardService: CreditCardService,
+    private snapshotsService: SnapshotsService,
+    private authService: AuthService,
+    private expensesService: ExpensesService,
   ) {
     this.applyGlobalChartSettings();
   }
@@ -101,13 +124,23 @@ export class DashboardComponent implements OnInit {
       }, 50);
     });
 
-    this.creditCardService.getDashboardCardsUsage(currentMonthStr).subscribe({
-      next: (cards: CreditCardUsage[]) => {
-        this.creditCards = cards;
-        this.cdr.detectChanges();
+    this.creditCardService.getAll().subscribe({
+      next: (cards: CreditCard[]) => {
+        const usageRequests = cards.map(card =>
+          this.creditCardService.getDashboardCardsUsage(card.id, currentMonthStr)
+        );
+
+        Promise.all(usageRequests.map(req => req.toPromise())).then(usages => {
+          this.creditCards = usages.map((usage, i) => ({
+            ...usage!,
+            name: cards[i].name,
+            usagePercentage: Math.min(Math.round((usage!.totalOwed / usage!.limit) * 100), 100)
+          }));
+          this.cdr.detectChanges();
+        });
       },
       error: (err: any) => {
-        console.error('Erro ao buscar uso dos cartões:', err);
+        console.error('Erro ao buscar cartões:', err);
       }
     });
 
@@ -125,6 +158,75 @@ export class DashboardComponent implements OnInit {
         this.cdr.detectChanges();
       }, 50);
     });
+
+    // Fundos disponíveis
+    this.snapshotsService.getCurrent().subscribe({
+      next: (snapshot) => {
+        this.snapshot = snapshot;
+        this.cdr.detectChanges();
+      },
+      error: () => { this.snapshot = null; }
+    });
+
+    this.authService.getMe().subscribe({
+      next: (user) => {
+        this.userSavings = Number(user.savings) || 0;
+        this.userSalary = Number(user.salary) || 0;
+        this.userPayday = user.payday ?? null;
+        this.salaryAlreadyEntered = user.payday !== null
+          ? now.getDate() >= user.payday
+          : true;
+        this.recalculateFunds();
+        this.cdr.detectChanges();
+      }
+    });
+  // Avisos de vencimento
+  this.expensesService.getAll().subscribe({
+    next: (expenses) => {
+      const today = new Date();
+      const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+      this.expensesService.getPaymentsByMonth(currentMonth).subscribe({
+        next: (payments) => {
+          const paidIds = new Set(
+            payments.filter(p => p.paid_at !== null).map((p: any) => p.expense.id)
+          );
+
+          this.dueDateAlerts = expenses
+            .filter(e => e.is_active && e.due_day !== null && !paidIds.has(e.id))
+            .map(e => {
+              const dueDate = new Date(today.getFullYear(), today.getMonth(), e.due_day!);
+              const diffDays = Math.round((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              let message = '';
+              let colorClass = '';
+
+              if (diffDays === 0) {
+                message = 'Vence hoje';
+                colorClass = 'text-rose-500';
+              } else if (diffDays > 0 && diffDays <= 3) {
+                message = `Faltam ${diffDays} dia${diffDays > 1 ? 's' : ''}`;
+                colorClass = 'text-amber-400';
+              } else if (diffDays < 0) {
+                message = `Venceu há ${Math.abs(diffDays)} dia${Math.abs(diffDays) > 1 ? 's' : ''}`;
+                colorClass = 'text-rose-400';
+              }
+
+              return message ? { id: e.id, description: e.description, amount: e.amount, message, colorClass } : null;
+            })
+            .filter((a): a is DueDateAlert => a !== null);
+
+          this.cdr.detectChanges();
+        }
+      });
+    }
+  });
+}
+
+  recalculateFunds(): void {
+    const snapshotValue = this.snapshot ? Number(this.snapshot.freeToSpend) : 0;
+    const salaryValue = this.salaryAlreadyEntered ? this.userSalary : 0;
+    const cardDebt = this.current ? this.current.cardDebt : 0;
+    this.totalAvailableFunds = snapshotValue + salaryValue + this.userSavings - cardDebt;
   }
 
   toggleSidebar(): void {

@@ -7,15 +7,18 @@ export interface CreditCard {
   id: string;
   name: string;
   limit: number;
-  closing_day: number;   
-  payment_due_day: number;  
+  closing_day: number;
+  payment_due_day: number;
 }
 
 export interface CreditCardUsage {
-  id: string;
+  creditCardId: string;
   name: string;
+  month: string;
   limit: number;
-  used: number;
+  committed: number;
+  previousDebt: number;
+  totalOwed: number;
   available: number;
   usagePercentage: number;
 }
@@ -32,8 +35,8 @@ export class CreditCardService {
     return this.http.get<CreditCard[]>(this.apiUrl);
   }
 
-  getDashboardCardsUsage(month: string): Observable<CreditCardUsage[]> {
-    return this.http.get<CreditCardUsage[]>(`${this.apiUrl}/usage/${month}`);
+  getDashboardCardsUsage(id: string, month: string): Observable<CreditCardUsage> {
+    return this.http.get<CreditCardUsage>(`${this.apiUrl}/${id}/usage/${month}`);
   }
 
   create(data: CreateCreditCardDto): Observable<CreditCard> {
