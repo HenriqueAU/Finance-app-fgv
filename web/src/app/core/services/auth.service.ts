@@ -52,7 +52,7 @@ export class AuthService {
   }
 
   updateEmergencyReserve(data: { emergency_reserve: number }): Observable<any> {
-    return this.http.patch(`${this.apiUrl}/users/me/emergency_reserve`, data);
+    return this.http.patch(`${this.apiUrl}/users/me/emergency-reserve`, data);
   }
 
   updatePassword(data: any): Observable<User> {
