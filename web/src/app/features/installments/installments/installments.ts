@@ -1,16 +1,21 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
 import { InstallmentsService } from '../../../core/services/installments.service';
+import { CategoriesService, Category } from '../../../core/services/categories.service';
+import { CreditCardService, CreditCard } from '../../../core/services/credit-cards.service';
 
 interface Installment {
   id: string;
   name: string;
   category: string;
+  categoryColor?: string;
   monthlyValue: number;
   currentParcel: number;
   totalParcels: number;
+  categoryId?: string;
+  creditCardId?: string;
 }
 
 @Component({
@@ -23,15 +28,25 @@ export class InstallmentsComponent implements OnInit {
   @ViewChild(SidebarComponent) sidebar!: SidebarComponent;
 
   installmentForm!: FormGroup;
-  showModal = false;
-  editingId: string | null = null;
-
+  inlineCategoryForm!: FormGroup; // CORREÇÃO: Faltava a exclamação (!)
+  
   installments: Installment[] = [];
-  categories: any[] = [];
+  categories: Category[] = [];
+  creditCards: CreditCard[] = [];
+  
+  showModal = false;
+  showInlineCategory = false;
+  isSavingCategory = false;
+  isLoading = true;
+  editingId: string | null = null;
+  isSubmitting = false;
 
   constructor(
     private fb: FormBuilder,
-    private installmentsService: InstallmentsService
+    private installmentsService: InstallmentsService,
+    private categoriesService: CategoriesService,
+    private creditCardService: CreditCardService,
+    private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
@@ -42,75 +57,160 @@ export class InstallmentsComponent implements OnInit {
   initForm() {
     this.installmentForm = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(3)]],
-      category: [''],
+      categoryId: [null],
       monthlyValue: ['', [Validators.required, Validators.min(0.01)]],
       currentParcel: ['', [Validators.required, Validators.min(1)]],
       totalParcels: ['', [Validators.required, Validators.min(1)]],
+      type: ['regular'],
+      creditCardId: [null]
+    });
+
+    this.inlineCategoryForm = this.fb.group({
+      name: ['', Validators.required],
+      color: ['#10B981', Validators.required]
+    });
+
+    this.creditCardService.getAll().subscribe({
+      next: (data) => {
+        this.creditCards = data;
+        this.cdr.detectChanges(); // Garante que o select do HTML seja preenchido
+      },
+      error: (err) => console.error('Erro ao buscar cartões:', err)
     });
   }
 
   loadData() {
-    this.installmentsService.getCategories().subscribe(cats => this.categories = cats);
-    this.installmentsService.getInstallments().subscribe(data => {
-      this.installments = data.map(item => this.mapToFrontend(item));
+    this.isLoading = true;
+
+    // Carrega Categorias
+    this.categoriesService.getAll().subscribe(data => this.categories = data);
+
+    // Carrega Cartões
+    this.creditCardService.getAll().subscribe(data => this.creditCards = data);
+
+    // Carrega Parcelamentos
+    this.installmentsService.getInstallments().subscribe({
+      next: (data: any[]) => { 
+        // CORREÇÃO: Usando a sua função para formatar os dados que vêm do banco
+        this.installments = data.map(item => this.mapToFrontend(item));
+        this.isLoading = false;
+        this.cdr.detectChanges(); // Detecta mudanças e atualiza a view
+      },
+      error: (err: any) => { 
+        console.error('Erro ao buscar parcelamentos:', err);
+        this.isLoading = false;
+        this.cdr.detectChanges(); // Detecta mudanças e atualiza a view
+      }
     });
   }
 
   private mapToFrontend(item: any): Installment {
-    const startStr = item.start_month || new Date().toISOString().slice(0, 7);
-    const start = new Date(startStr + '-01');
-    const now = new Date();
+    let startYear: number;
+    let startMonth: number;
 
-    let current = 1;
-    if (!isNaN(start.getTime())) {
-      const diff = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-      current = Math.max(1, Math.min(diff + 1, item.total_months || 1));
+    if (item.start_month) {
+      // A MÁGICA: Ao usar métodos UTC, ignoramos o desconto de 3 horas do fuso do Brasil, 
+      // garantindo que o mês lido seja exatamente o mês salvo, sem voltar pro dia 31 do mês passado.
+      const dateObj = new Date(item.start_month);
+      startYear = dateObj.getUTCFullYear();
+      startMonth = dateObj.getUTCMonth();
+    } else {
+      const today = new Date();
+      startYear = today.getFullYear();
+      startMonth = today.getMonth();
     }
+
+    const now = new Date();
+    // Usa o ano/mês atuais para comparar
+    const diff = (now.getFullYear() - startYear) * 12 + (now.getMonth() - startMonth);
+    const current = Math.max(1, Math.min(diff + 1, item.total_months || 1));
 
     return {
       id: item.id,
       name: item.description,
       category: item.category?.name || 'Geral',
+      categoryColor: item.category?.color || '#cbd5e1',
       monthlyValue: Number(item.installment_amount),
       currentParcel: current,
-      totalParcels: item.total_months
+      totalParcels: item.total_months,
+      categoryId: item.category?.id,
+      creditCardId: item.credit_card?.id
     };
   }
 
-  onSubmit() {
-    if (this.installmentForm.valid) {
-      const form = this.installmentForm.value;
+  toggleInlineCategory() {
+    this.showInlineCategory = !this.showInlineCategory;
+    if (!this.showInlineCategory) this.inlineCategoryForm.reset({ color: '#10B981' });
+  }
 
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - (form.currentParcel - 1));
-      const startMonthStr = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+  saveInlineCategory() {
+    if (this.inlineCategoryForm.invalid) return;
+    
+    this.isSavingCategory = true;
+    const payload = {
+      ...this.inlineCategoryForm.value,
+      is_essential: false // Injetando o boolean pro NestJS não reclamar
+    };
 
-      const payload = {
-        description: form.name,
-        installment_amount: Number(form.monthlyValue),
-        total_months: Number(form.totalParcels),
-        start_month: startMonthStr,
-        categoryId: form.category || null
-      };
-
-      if (this.editingId !== null) {
-        this.installmentsService.updateInstallment(this.editingId, payload).subscribe({
-          next: () => {
-            this.loadData();
-            this.toggleModal();
-          },
-          error: (err) => alert(err.error?.message || 'Erro ao atualizar')
-        });
-      } else {
-        this.installmentsService.createInstallment(payload).subscribe({
-          next: () => {
-            this.loadData();
-            this.toggleModal();
-          },
-          error: (err) => alert(err.error?.message || 'Erro ao salvar')
-        });
+    this.categoriesService.create(payload).subscribe({
+      next: (newCategory) => {
+        this.categories = [...this.categories, newCategory];
+        this.installmentForm.patchValue({ categoryId: newCategory.id });
+        this.toggleInlineCategory();
+        this.isSavingCategory = false;
+      },
+      error: (err) => {
+        console.error('Erro DETALHADO ao criar categoria:', err);
+        this.isSavingCategory = false;
       }
+    });
+  }
+
+  onSubmit() {
+    if (this.installmentForm.invalid) return;
+
+    this.isSubmitting = true; 
+    const formValues = this.installmentForm.value;
+
+    // --- CÁLCULO DE DATA A PROVA DE BALAS ---
+    const currentParcel = Number(formValues.currentParcel);
+    const today = new Date();
+    // Fixamos o dia como 1º para que subtrair o mês nunca pule Fevereiro ou meses de 30 dias
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1); 
+    startDate.setMonth(startDate.getMonth() - (currentParcel - 1));
+    const startMonth = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
+    // ----------------------------------------
+
+    const payload: any = {
+      description: formValues.name,
+      installment_amount: Number(formValues.monthlyValue),
+      total_months: Number(formValues.totalParcels),
+      start_month: startMonth,
+      type: formValues.type || 'regular',
+    };
+
+    if (formValues.categoryId && formValues.categoryId !== 'null') {
+      payload.categoryId = formValues.categoryId; 
     }
+    if (formValues.creditCardId && formValues.creditCardId !== 'null') {
+      payload.creditCardId = formValues.creditCardId;
+    }
+
+    const request$ = this.editingId 
+      ? this.installmentsService.updateInstallment(this.editingId, payload)
+      : this.installmentsService.createInstallment(payload);
+
+    request$.subscribe({
+      next: () => {
+        this.loadData(); 
+        this.toggleModal();
+        this.isSubmitting = false;
+      },
+      error: (err) => {
+        console.error('Erro ao salvar parcelamento:', err);
+        this.isSubmitting = false;
+      }
+    });
   }
 
   deleteInstallment(id: string) {
@@ -135,7 +235,7 @@ export class InstallmentsComponent implements OnInit {
   toggleModal() {
     this.showModal = !this.showModal;
     if (!this.showModal) {
-      this.installmentForm.reset();
+      this.installmentForm.reset({ type: 'regular' });
       this.editingId = null;
     }
   }

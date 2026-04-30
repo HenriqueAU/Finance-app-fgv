@@ -1,10 +1,10 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
 import { ExpensesService, Expense, CreateExpenseDto } from '../../../core/services/expenses.service';
 import { CategoriesService, Category } from '../../../core/services/categories.service';
-
+import { CreditCardService, CreditCard } from '../../../core/services/credit-cards.service';
 @Component({
   selector: 'app-fixed-expenses',
   standalone: true,
@@ -12,22 +12,28 @@ import { CategoriesService, Category } from '../../../core/services/categories.s
   templateUrl: './fixed-expenses.html'
 })
 export class FixedExpensesComponent implements OnInit {
+  @ViewChild(SidebarComponent) sidebar!: SidebarComponent;
   expenseForm!: FormGroup;
+  inlineCategoryForm!: FormGroup;
   showModal = false;
   editingId: string | null = null;
 
   expenses: Expense[] = [];
   categories: Category[] = [];
+  creditCards: CreditCard[] = [];
   isLoading = false;
   errorMessage = '';
 
   currentMonth: string = '';
   paidExpenseIds = new Set<string>();
+  showInlineCategory = false;
+  isSavingCategory = false;
 
   constructor(
     private fb: FormBuilder,
     private expensesService: ExpensesService,
     private categoriesService: CategoriesService,
+    private creditCardService: CreditCardService,
     private cdRef: ChangeDetectorRef
   ) {}
 
@@ -46,7 +52,19 @@ export class FixedExpensesComponent implements OnInit {
       amount: ['', [Validators.required, Validators.min(0.01)]],
       categoryId: [null],
       due_day: [null, [Validators.min(1), Validators.max(31)]],
+      creditCardId: [null]
     });
+
+    this.inlineCategoryForm = this.fb.group({
+      name: ['', [Validators.required, Validators.minLength(3)]],
+      color: ['#10B981', [Validators.required]]
+    });
+  }
+
+  toggleSidebar(): void {
+    if (this.sidebar) {
+      this.sidebar.toggleSidebar();
+    }
   }
 
   loadExpenses() {
@@ -67,7 +85,51 @@ export class FixedExpensesComponent implements OnInit {
         this.cdRef.detectChanges();
       }
     });
+
+    this.categoriesService.getAll().subscribe({
+      next: (data) => this.categories = data,
+      error: (err) => console.error('Erro ao carregar categorias', err)
+    });
+
+    this.creditCardService.getAll().subscribe({
+      next: (data) => this.creditCards = data,
+      error: (err) => console.error('Erro ao carregar cartões', err)
+    });
   }
+
+  toggleInlineCategory() {
+    this.showInlineCategory = !this.showInlineCategory;
+    if (!this.showInlineCategory) {
+      this.inlineCategoryForm.reset({ color: '#10B981' });
+    }
+  }
+
+  // No seu fixed-expenses.ts
+  saveInlineCategory() {
+    if (this.inlineCategoryForm.invalid) return;
+    
+    this.isSavingCategory = true;
+    
+    // Pegamos os dados do formulário e injetamos a obrigatoriedade do NestJS
+    const payload = {
+      ...this.inlineCategoryForm.value,
+      is_essential: false // <--- A MÁGICA AQUI
+    };
+
+    this.categoriesService.create(payload).subscribe({
+      next: (newCategory) => {
+        this.categories = [...this.categories, newCategory];
+        this.expenseForm.patchValue({ categoryId: newCategory.id });
+        this.toggleInlineCategory();
+        this.isSavingCategory = false;
+      },
+      error: (err) => {
+        console.error('Erro DETALHADO ao criar categoria:', err);
+        this.isSavingCategory = false;
+      }
+    });
+  }
+
 
   loadCategories() {
     // Adicionamos o 'is_essential' para satisfazer o TypeScript!
@@ -157,29 +219,39 @@ togglePayment(expense: Expense) {
 
   onSubmit() {
     if (this.expenseForm.invalid) return;
-    const dto: CreateExpenseDto = this.expenseForm.value;
 
-    // TRUQUE DE MESTRE MELHORADO: Removemos o ID falso tanto para Criar quanto para Editar
-    const payload = { ...dto };
-    if (payload.categoryId && String(payload.categoryId).startsWith('fake-')) {
-      // Usamos undefined ou null dependendo do que o back-end do Henrique prefere.
-      // Se null der erro 400 de novo, troque para 'undefined'
-      payload.categoryId = null as any;
+    // 1. Fazemos uma cópia dos dados para não alterar o formulário original
+    const payload = { ...this.expenseForm.value };
+
+    // 2. A MÁGICA: Forçamos o amount a ser um número real (Isso mata o erro da sua imagem!)
+    payload.amount = Number(payload.amount);
+
+    // 3. Limpamos os relacionamentos nulos/vazios para o NestJS não rejeitar os UUIDs
+    if (!payload.categoryId || payload.categoryId === 'null') delete payload.categoryId;
+    if (!payload.creditCardId || payload.creditCardId === 'null') delete payload.creditCardId;
+    
+    // Se o dia de vencimento estiver vazio, removemos também
+    if (!payload.due_day) delete payload.due_day;
+
+    // --- A partir daqui é a sua lógica normal de salvar ---
+    
+    // Exemplo de como deve estar sua chamada:
+    if (this.editingId) {
+      this.expensesService.update(this.editingId, payload).subscribe({
+        next: () => {
+          this.loadExpenses(); // ou o método que você usa para recarregar a tabela
+          this.toggleModal();
+        },
+        error: (err) => console.error('Erro ao atualizar:', err)
+      });
+    } else {
+      this.expensesService.create(payload).subscribe({
+        next: () => {
+          this.loadExpenses(); // ou o método que você usa para recarregar a tabela
+          this.toggleModal();
+        },
+        error: (err) => console.error('Erro ao criar:', err)
+      });
     }
-
-    const request$ = this.editingId
-      ? this.expensesService.update(this.editingId, payload) // O payload limpo vai aqui agora!
-      : this.expensesService.create(payload); // E aqui também
-
-    request$.subscribe({
-      next: () => {
-        this.loadExpenses();
-        this.toggleModal();
-      },
-      error: (err) => {
-        console.error('Erro detalhado do back-end:', err); // Adicionei isso pra gente ver no F12!
-        this.errorMessage = 'Erro ao salvar conta.';
-      }
-    });
   }
 }

@@ -1,8 +1,21 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
-import { IntentionService, Intention } from '../../../core/services/intention.service';
+
+// Ajuste os caminhos conforme o seu projeto
+import { IntentionService } from '../../../core/services/intention.service';
+import { CategoriesService, Category } from '../../../core/services/categories.service';
+
+interface Intention {
+  id: string;
+  description: string;
+  amount: number;
+  status: 'pendente' | 'aprovada' | 'rejeitada' | 'cancelada';
+  category: string;
+  categoryColor: string;
+  categoryId?: string;
+}
 
 @Component({
   selector: 'app-intentions',
@@ -11,93 +24,188 @@ import { IntentionService, Intention } from '../../../core/services/intention.se
   templateUrl: './intentions.html'
 })
 export class IntentionsComponent implements OnInit {
-  intentionForm!: FormGroup;
-  showModal = false;
-  editingId: string | null = null;
-  isLoading = false;
+  @ViewChild(SidebarComponent) sidebar!: SidebarComponent;
 
+  intentionForm!: FormGroup;
+  inlineCategoryForm!: FormGroup;
+  
   intentions: Intention[] = [];
+  categories: Category[] = [];
+  
+  showModal = false;
+  showInlineCategory = false;
+  isSavingCategory = false;
+  isLoading = true;
+  editingId: string | null = null;
+  isSubmitting = false;
 
   constructor(
     private fb: FormBuilder,
-    private intentionService: IntentionService,
+    private intentionsService: IntentionService,
+    private categoriesService: CategoriesService,
     private cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit() {
     this.initForm();
-    this.loadIntentions();
+    this.loadData();
   }
 
   initForm() {
     this.intentionForm = this.fb.group({
-      description: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
-      categoryId: [null], 
-      installment_amount: ['', [Validators.required, Validators.min(0)]],
-      months: ['', [Validators.required, Validators.min(1), Validators.max(60)]],
-      desired_start_month: ['', [Validators.required, Validators.pattern(/^\d{4}-(0[1-9]|1[0-2])$/)]],
+      description: ['', [Validators.required, Validators.minLength(3)]],
+      amount: [null, [Validators.required, Validators.min(0.01)]],
+      categoryId: [null],
+      status: ['pendente', Validators.required]
+    });
+
+    this.inlineCategoryForm = this.fb.group({
+      name: ['', Validators.required],
+      color: ['#F59E0B', Validators.required] // Começa com um tom de "Desejo/Ouro"
     });
   }
 
-  loadIntentions() {
+  loadData() {
     this.isLoading = true;
-    this.intentionService.getAll().subscribe({
-      next: (data) => {
-        this.intentions = data;
+
+    // Carrega Categorias
+    this.categoriesService.getAll().subscribe(data => this.categories = data);
+
+    // Carrega Intenções
+    this.intentionsService.getAll().subscribe({
+      next: (data: any[]) => {
+        this.intentions = data.map(item => this.mapToFrontend(item));
         this.isLoading = false;
-        this.cdr.detectChanges();
+        this.cdr.detectChanges(); // Atualiza a tela instantaneamente
       },
-      error: (err) => {
-        console.error('Erro ao carregar intenções:', err);
+      error: (err: any) => {
+        console.error('Erro ao buscar intenções:', err);
         this.isLoading = false;
         this.cdr.detectChanges();
       }
     });
   }
 
-  updateStatus(id: string, newStatus: 'APPROVED' | 'REJECTED') {
-    const request$ = newStatus === 'APPROVED' 
-      ? this.intentionService.approve(id) 
-      : this.intentionService.postpone(id);
+  private mapToFrontend(item: any): Intention {
+    // 1. Trocamos o 'const' pelo 'let' aqui! 👇
+    let rawStatus = (item.status || 'pending').trim().toLowerCase();
 
-    request$.subscribe({
-      next: () => this.loadIntentions(),
-      error: (err) => console.error('Erro ao atualizar status:', err)
-    });
+    // 2. Agora o TypeScript permite que a gente altere a variável à vontade:
+    if (rawStatus === 'pending') rawStatus = 'pendente';
+    if (rawStatus === 'approved') rawStatus = 'aprovada';
+    if (rawStatus === 'rejected') rawStatus = 'rejeitada';
+    if (rawStatus === 'canceled') rawStatus = 'cancelada';
+
+    return {
+      id: item.id,
+      description: item.description,
+      amount: Number(item.installment_amount), 
+      status: rawStatus, 
+      category: item.category?.name || 'Geral',
+      categoryColor: item.category?.color || '#cbd5e1',
+      categoryId: item.category?.id
+    };
   }
 
-  deleteIntention(id: string) {
-    if (confirm('Tem certeza que deseja excluir esta intenção de compra?')) {
-      this.intentionService.remove(id).subscribe({
-        next: () => this.loadIntentions(),
-        error: (err) => console.error('Erro ao excluir:', err)
-      });
+  toggleInlineCategory() {
+    this.showInlineCategory = !this.showInlineCategory;
+    if (!this.showInlineCategory) this.inlineCategoryForm.reset({ color: '#F59E0B' });
+  }
+
+  saveInlineCategory() {
+    if (this.inlineCategoryForm.invalid) return;
+    
+    const newCategoryName = this.inlineCategoryForm.value.name.trim();
+
+    // Tratamento de duplicidade no frontend
+    const existingCategory = this.categories.find(
+      cat => cat.name.toLowerCase() === newCategoryName.toLowerCase()
+    );
+
+    if (existingCategory) {
+      alert(`Você já tem uma categoria chamada "${existingCategory.name}". Vou selecioná-la para você!`);
+      this.intentionForm.patchValue({ categoryId: existingCategory.id });
+      this.toggleInlineCategory();
+      return; 
     }
+
+    this.isSavingCategory = true;
+    const payload = {
+      ...this.inlineCategoryForm.value,
+      name: newCategoryName,
+      is_essential: false
+    };
+
+    this.categoriesService.create(payload).subscribe({
+      next: (newCategory) => {
+        this.categories = [...this.categories, newCategory];
+        this.intentionForm.patchValue({ categoryId: newCategory.id });
+        this.toggleInlineCategory();
+        this.isSavingCategory = false;
+      },
+      error: (err) => {
+        console.error('Erro ao criar categoria:', err);
+        alert('Erro ao salvar categoria no servidor.');
+        this.isSavingCategory = false;
+      }
+    });
   }
 
   onSubmit() {
-    if (this.intentionForm.invalid) return;
+    if (this.intentionForm.invalid) {
+      this.intentionForm.markAllAsTouched();
+      return;
+    }
 
-    const payload = this.intentionForm.value;
+    this.isSubmitting = true; 
+    const formValues = this.intentionForm.value;
 
-    const request$ = this.editingId
-      ? this.intentionService.update(this.editingId, payload)
-      : this.intentionService.create(payload);
+    // Formato exato exigido pelo Regex: YYYY-MM
+    const today = new Date();
+    const monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    const payload: any = {
+      description: formValues.description,
+      installment_amount: Number(formValues.amount),
+      months: 1, 
+      desired_start_month: monthStr, // <--- O VERDADEIRO NOME DA CHAVE!
+    };
+
+    // Caso o seu backend aceite o status na hora de criar/atualizar
+    if (formValues.status) {
+      payload.status = formValues.status;
+    }
+
+    if (formValues.categoryId && formValues.categoryId !== 'null') {
+      payload.categoryId = formValues.categoryId; 
+    }
+
+    const request$ = this.editingId 
+      ? this.intentionsService.update(this.editingId, payload)
+      : this.intentionsService.create(payload);
 
     request$.subscribe({
       next: () => {
-        this.loadIntentions();
+        this.loadData(); 
         this.toggleModal();
+        this.isSubmitting = false;
       },
-      error: (err) => console.error('Erro ao salvar intenção:', err)
+      error: (err) => {
+        console.error('Erro ao salvar intenção:', err);
+        alert('Erro ao salvar. Verifique o console do navegador.');
+        this.isSubmitting = false;
+      }
     });
   }
 
-  toggleModal() {
-    this.showModal = !this.showModal;
-    if (!this.showModal) {
-      this.intentionForm.reset();
-      this.editingId = null;
+  simulateIntention(item: Intention) {
+    // Aqui vai a chamada pro seu backend de simulação no futuro!
+    alert(`Simulando a compra de: ${item.description} (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}). \n\nEm breve o motor de viabilidade estará conectado aqui!`);
+  }
+
+  deleteIntention(id: string) {
+    if (confirm('Deseja realmente excluir esta intenção de compra?')) {
+      this.intentionsService.remove(id).subscribe(() => this.loadData());
     }
   }
 
@@ -105,45 +213,22 @@ export class IntentionsComponent implements OnInit {
     const item = this.intentions.find(i => i.id === id);
     if (item) {
       this.editingId = id;
-      
-      // Fix do formato da data para o input do Chrome não quebrar
-      let monthStr = item.desired_start_month;
-      if (monthStr && monthStr.length > 7) {
-        monthStr = monthStr.substring(0, 7);
-      }
-
-      this.intentionForm.patchValue({
-        description: item.description,
-        installment_amount: item.installment_amount,
-        months: item.months,
-        desired_start_month: monthStr,
-        categoryId: item.categoryId
-      });
-      
+      this.intentionForm.patchValue(item);
       this.showModal = true;
     }
   }
 
-  getStatusClass(status: string | undefined): string {
-    if (!status) return 'bg-slate-100 text-slate-700';
-    
-    // Força para maiúsculo para evitar bugs de digitação do back-end
-    const safeStatus = status.toUpperCase(); 
-    
-    const classes = {
-      'PENDING': 'bg-amber-100 text-amber-700 border-amber-200', // Voltei pro laranjinha padrão
-      'APPROVED': 'bg-emerald-100 text-emerald-700 border-emerald-200',
-      'REJECTED': 'bg-rose-100 text-rose-700 border-rose-200',
-    };
-    return classes[safeStatus as keyof typeof classes] || 'bg-slate-100 text-slate-700';
+  toggleModal() {
+    this.showModal = !this.showModal;
+    if (!this.showModal) {
+      this.intentionForm.reset({ status: 'pendente' });
+      this.editingId = null;
+    }
   }
 
-  translateStatus(status: string | undefined): string {
-    if (!status) return 'Desconhecido';
-    
-    const safeStatus = status.toUpperCase();
-    
-    const translation = { 'PENDING': 'Em Análise', 'APPROVED': 'Aprovada', 'REJECTED': 'Reprovada' };
-    return translation[safeStatus as keyof typeof translation] || status;
+  toggleSidebar(): void {
+    if (this.sidebar) {
+      this.sidebar.toggleSidebar();
+    }
   }
 }
