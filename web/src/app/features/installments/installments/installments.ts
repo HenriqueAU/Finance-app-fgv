@@ -2,7 +2,7 @@ import { Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
-import { InstallmentsService } from '../installments.service';
+import { InstallmentsService } from '../../../core/services/installments.service';
 
 interface Installment {
   id: string;
@@ -51,23 +51,21 @@ export class InstallmentsComponent implements OnInit {
 
   loadData() {
     this.installmentsService.getCategories().subscribe(cats => this.categories = cats);
-    
-    // Busca Parcelamentos e "traduz" para o seu formato de tela
     this.installmentsService.getInstallments().subscribe(data => {
       this.installments = data.map(item => this.mapToFrontend(item));
     });
   }
 
   private mapToFrontend(item: any): Installment {
-  const startStr = item.start_month || new Date().toISOString().slice(0, 7);
-  const start = new Date(startStr + '-01');
-  const now = new Date();
-  
-  let current = 1;
-  if (!isNaN(start.getTime())) {
-    const diff = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
-    current = Math.max(1, Math.min(diff + 1, item.total_months || 1));
-  }
+    const startStr = item.start_month || new Date().toISOString().slice(0, 7);
+    const start = new Date(startStr + '-01');
+    const now = new Date();
+
+    let current = 1;
+    if (!isNaN(start.getTime())) {
+      const diff = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+      current = Math.max(1, Math.min(diff + 1, item.total_months || 1));
+    }
 
     return {
       id: item.id,
@@ -89,7 +87,6 @@ export class InstallmentsComponent implements OnInit {
 
       const payload = {
         description: form.name,
-        total_amount: Number(form.monthlyValue) * Number(form.totalParcels),
         installment_amount: Number(form.monthlyValue),
         total_months: Number(form.totalParcels),
         start_month: startMonthStr,
@@ -97,13 +94,20 @@ export class InstallmentsComponent implements OnInit {
       };
 
       if (this.editingId !== null) {
+        this.installmentsService.updateInstallment(this.editingId, payload).subscribe({
+          next: () => {
+            this.loadData();
+            this.toggleModal();
+          },
+          error: (err) => alert(err.error?.message || 'Erro ao atualizar')
+        });
       } else {
         this.installmentsService.createInstallment(payload).subscribe({
           next: () => {
             this.loadData();
             this.toggleModal();
           },
-          error: (err) => alert(err.error.message || 'Erro ao salvar')
+          error: (err) => alert(err.error?.message || 'Erro ao salvar')
         });
       }
     }
@@ -112,6 +116,15 @@ export class InstallmentsComponent implements OnInit {
   deleteInstallment(id: string) {
     if (confirm('Deseja remover este parcelamento?')) {
       this.installmentsService.deleteInstallment(id).subscribe(() => this.loadData());
+    }
+  }
+
+  editInstallment(id: string) {
+    const item = this.installments.find(i => i.id === id);
+    if (item) {
+      this.editingId = id;
+      this.installmentForm.patchValue(item);
+      this.showModal = true;
     }
   }
 
@@ -127,38 +140,9 @@ export class InstallmentsComponent implements OnInit {
     }
   }
 
-  editInstallment(id: string) {
-    const item = this.installments.find(i => i.id === id);
-    if (item) {
-      this.editingId = id;
-      this.installmentForm.patchValue(item);
-      this.showModal = true;
-    }
-  }
-
-  deleteInstallment(id: number) {
-    if (confirm('Deseja remover este parcelamento?')) {
-      this.installments = this.installments.filter(i => i.id !== id);
-    }
-  }
-
-  onSubmit() {
-    if (this.installmentForm.valid) {
-      if (this.editingId !== null) {
-        const index = this.installments.findIndex(i => i.id === this.editingId);
-        this.installments[index] = { ...this.installmentForm.value, id: this.editingId };
-      } else {
-        const newId = this.installments.length > 0 ? Math.max(...this.installments.map(i => i.id)) + 1 : 1;
-        this.installments.push({ ...this.installmentForm.value, id: newId });
-      }
-      this.toggleModal();
-    }
-  }
-
   toggleSidebar(): void {
     if (this.sidebar) {
       this.sidebar.toggleSidebar();
     }
   }
-
 }

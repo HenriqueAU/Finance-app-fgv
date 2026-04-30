@@ -2,7 +2,7 @@
   <app-sidebar></app-sidebar>
 
   <nav class="fixed top-0 left-0 right-0 h-20 bg-slate-50/80 dark:bg-[#050505]/80 backdrop-blur-md border-b border-slate-200 dark:border-white/5 z-40 flex items-center px-6 gap-5 transition-all">
-    
+
     <button (click)="toggleSidebar()" class="p-2 -ml-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-emerald-500 hover:bg-slate-200/50 dark:hover:bg-white/5 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
       <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
     </button>
@@ -22,11 +22,11 @@
   </nav>
 
   <main class="pt-24 p-6 max-w-[1600px] mx-auto w-full overflow-x-hidden flex-1 flex flex-col">
-    
+
     <section class="space-y-3">
       @for (item of installments; track item.id) {
         <article class="group bg-white dark:bg-[#121212] p-5 rounded-[24px] border border-slate-200 dark:border-white/5 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 flex flex-col lg:flex-row lg:items-center justify-between gap-5 overflow-hidden relative">
-          
+
           <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-emerald-400 to-emerald-600 scale-y-0 group-hover:scale-y-100 transition-transform origin-bottom duration-300"></div>
 
           <div class="flex items-center gap-4 flex-1 pl-2">
@@ -45,7 +45,7 @@
               <span class="text-emerald-500">{{ item.currentParcel }} de {{ item.totalParcels }}</span>
             </div>
             <div class="h-2 w-full bg-slate-100 dark:bg-white/5 rounded-full overflow-hidden shadow-inner">
-              <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-1000 ease-out" 
+              <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-1000 ease-out"
                    [style.width.%]="getProgress(item.currentParcel, item.totalParcels)">
               </div>
             </div>
@@ -56,7 +56,7 @@
               <p class="text-[9px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Valor da Parcela</p>
               <p class="text-xl font-black text-slate-900 dark:text-white tracking-tighter">{{ item.monthlyValue | currency:'BRL' }}</p>
             </div>
-            
+
             <div class="flex gap-1.5">
               <button (click)="editInstallment(item.id)" class="p-2 bg-slate-50 dark:bg-white/5 hover:bg-emerald-500 hover:text-white rounded-lg transition-all text-slate-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
               <button (click)="deleteInstallment(item.id)" class="p-2 bg-slate-50 dark:bg-white/5 hover:bg-rose-500 hover:text-white rounded-lg transition-all text-slate-400"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
@@ -65,6 +65,68 @@
         </article>
       }
     </section>
+    @if (showModal) {
+  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-[#0f0f0f] w-full max-w-md rounded-[28px] shadow-2xl overflow-hidden border border-slate-200 dark:border-white/10">
 
+      <div class="bg-slate-900 dark:bg-[#1a1a1a] p-6 text-white">
+        <h2 class="text-lg font-black uppercase tracking-tight">{{ editingId ? 'Editar Parcelamento' : 'Novo Parcelamento' }}</h2>
+        <p class="text-slate-400 text-xs mt-0.5">Preencha os dados do parcelamento.</p>
+      </div>
+
+      <form [formGroup]="installmentForm" (ngSubmit)="onSubmit()" class="p-6 flex flex-col gap-4">
+
+        <div>
+          <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Descrição</label>
+          <input formControlName="name" type="text" placeholder="Ex: iPhone 15"
+                 class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all text-sm font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Valor da Parcela</label>
+            <input formControlName="monthlyValue" type="number" step="0.01" placeholder="0,00"
+                   class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all text-sm font-medium">
+          </div>
+          <div>
+            <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Total de Parcelas</label>
+            <input formControlName="totalParcels" type="number" min="1" max="60" placeholder="Ex: 12"
+                   class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all text-sm font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Parcela Atual</label>
+          <input formControlName="currentParcel" type="number" min="1" placeholder="Ex: 3"
+                 class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all text-sm font-medium">
+          <p class="text-[10px] text-slate-400 mt-1">Usada para calcular o mês de início.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Categoria</label>
+          <select formControlName="category"
+                  class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all text-sm font-medium">
+            <option [value]="null">Sem categoria</option>
+            @for (cat of categories; track cat.id) {
+              <option [value]="cat.id">{{ cat.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="flex gap-3 mt-2">
+          <button type="button" (click)="toggleModal()"
+                  class="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-sm">
+            Cancelar
+          </button>
+          <button type="submit" [disabled]="installmentForm.invalid"
+                  class="flex-1 px-4 py-3 rounded-xl font-black text-white bg-slate-900 dark:bg-white dark:text-black hover:bg-slate-700 dark:hover:bg-slate-200 disabled:opacity-40 transition-all shadow-lg text-sm">
+            {{ editingId ? 'Salvar Alterações' : 'Criar Parcelamento' }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+}
     </main>
 </div>

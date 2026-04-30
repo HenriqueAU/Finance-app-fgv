@@ -76,6 +76,7 @@ export class CreditCardsService {
     creditCardId: string,
     userId: string,
     month: string,
+    depth = 0,
   ): Promise<CardUsage> {
     const creditCard = await this.creditCardRepository.findOne({
       where: { id: creditCardId, user: { id: userId } },
@@ -115,7 +116,7 @@ export class CreditCardsService {
       m === 1 ? `${year - 1}-12` : `${year}-${String(m - 1).padStart(2, '0')}`;
 
     let previousDebt = 0;
-    if (previousMonth) {
+    if (previousMonth && depth === 0) {
       const previousPayment = await this.cardPaymentRepository.findOne({
         where: {
           credit_card: { id: creditCardId },
@@ -123,18 +124,18 @@ export class CreditCardsService {
           month: previousMonth,
         },
       });
-      const previousUsage = await this.getUsage(
-        creditCardId,
-        userId,
-        previousMonth,
-      );
+
       if (previousPayment) {
+        const previousUsage = await this.getUsage(
+          creditCardId,
+          userId,
+          previousMonth,
+          1,
+        );
         previousDebt = Math.max(
           0,
           previousUsage.committed - Number(previousPayment.amount_paid),
         );
-      } else {
-        previousDebt = previousUsage.committed;
       }
     }
 

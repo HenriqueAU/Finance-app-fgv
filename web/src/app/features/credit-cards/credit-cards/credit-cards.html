@@ -2,7 +2,7 @@
   <app-sidebar></app-sidebar>
 
   <nav class="fixed top-0 left-0 right-0 h-20 bg-slate-50/80 dark:bg-[#050505]/80 backdrop-blur-md border-b border-slate-200 dark:border-white/5 z-40 flex items-center px-6 gap-5 transition-all">
-    
+
     <button (click)="toggleSidebar()" class="p-2 -ml-2 rounded-xl text-slate-500 dark:text-slate-400 hover:text-emerald-500 hover:bg-slate-200/50 dark:hover:bg-white/5 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
       <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path></svg>
     </button>
@@ -22,7 +22,7 @@
   </nav>
 
   <main class="pt-24 p-6 max-w-[1600px] mx-auto w-full overflow-x-hidden flex-1 flex flex-col">
-    
+
     @if (isLoading) {
       <div class="flex flex-col items-center justify-center flex-1 text-slate-500 gap-4">
         <div class="animate-spin h-8 w-8 border-4 border-emerald-500 border-t-transparent rounded-full"></div>
@@ -58,7 +58,7 @@
                   <p class="text-xs font-bold text-emerald-400">Dia {{ card.payment_due_day }}</p>
                 </div>
               </div>
-              
+
               <div class="flex gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-300">
                 <button (click)="openModal(card)" class="p-1.5 bg-white/10 hover:bg-white/20 rounded-lg backdrop-blur-sm transition-colors text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
                 <button (click)="deleteCard(card.id)" class="p-1.5 bg-rose-500/80 hover:bg-rose-500 rounded-lg backdrop-blur-sm transition-colors text-white"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
@@ -74,6 +74,56 @@
         }
       </section>
     }
+    @if (isModalOpen) {
+      <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-[#0f0f0f] w-full max-w-md rounded-[28px] shadow-2xl overflow-hidden border border-slate-200 dark:border-white/10">
 
+          <div class="bg-slate-900 dark:bg-[#1a1a1a] p-6 text-white">
+            <h2 class="text-lg font-black uppercase tracking-tight">{{ editingCardId ? 'Editar Cartão' : 'Novo Cartão' }}</h2>
+            <p class="text-slate-400 text-xs mt-0.5">Preencha os dados do cartão de crédito.</p>
+          </div>
+
+          <form [formGroup]="cardForm" (ngSubmit)="saveCard()" class="p-6 flex flex-col gap-4">
+
+            <div>
+              <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Nome do Cartão</label>
+              <input formControlName="name" type="text" placeholder="Ex: Nubank, Inter..."
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all text-sm font-medium">
+            </div>
+
+            <div>
+              <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Limite</label>
+              <input formControlName="limit" type="number" step="0.01" placeholder="0,00"
+                    class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all text-sm font-medium">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Dia de Fechamento</label>
+                <input formControlName="closing_day" type="number" min="1" max="31" placeholder="Dia"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all text-sm font-medium">
+              </div>
+              <div>
+                <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Dia de Vencimento</label>
+                <input formControlName="payment_due_day" type="number" min="1" max="31" placeholder="Dia"
+                      class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#1a1a1a] text-slate-800 dark:text-white focus:border-emerald-500 outline-none transition-all text-sm font-medium">
+              </div>
+            </div>
+
+            <div class="flex gap-3 mt-2">
+              <button type="button" (click)="closeModal()"
+                      class="flex-1 px-4 py-3 rounded-xl font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-white/5 transition-all text-sm">
+                Cancelar
+              </button>
+              <button type="submit" [disabled]="cardForm.invalid || isSubmitting"
+                      class="flex-1 px-4 py-3 rounded-xl font-black text-white bg-slate-900 dark:bg-white dark:text-black hover:bg-slate-700 dark:hover:bg-slate-200 disabled:opacity-40 transition-all shadow-lg text-sm">
+                {{ isSubmitting ? 'Salvando...' : editingCardId ? 'Salvar Alterações' : 'Criar Cartão' }}
+              </button>
+            </div>
+
+          </form>
+        </div>
+      </div>
+    }
     </main>
 </div>

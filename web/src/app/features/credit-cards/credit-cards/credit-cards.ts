@@ -1,8 +1,8 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SidebarComponent } from '../../../shared/components/sidebar/sidebar';
-import { CreditCardService, CreditCard } from '../../../core/services/credit-cards.service'; 
+import { CreditCardService, CreditCard } from '../../../core/services/credit-cards.service';
 
 @Component({
   selector: 'app-credit-cards',
@@ -16,14 +16,15 @@ export class CreditCardsComponent implements OnInit {
   cards: CreditCard[] = [];
   isLoading: boolean = true;
   isSubmitting: boolean = false;
-  
+
   isModalOpen: boolean = false;
   editingCardId: string | null = null;
   cardForm!: FormGroup;
 
   constructor(
     private fb: FormBuilder,
-    private creditCardService: CreditCardService
+    private creditCardService: CreditCardService,
+    private cdr: ChangeDetectorRef
   ) {
     this.initForm();
   }
@@ -48,6 +49,7 @@ export class CreditCardsComponent implements OnInit {
       next: (data: CreditCard[]) => {
         this.cards = data;
         this.isLoading = false;
+        this.cdr.detectChanges();
       },
       error: (err: any) => {
         console.error('Erro ao carregar cartões', err);

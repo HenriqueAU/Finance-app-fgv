@@ -21,6 +21,9 @@ export class FixedExpensesComponent implements OnInit {
   isLoading = false;
   errorMessage = '';
 
+  currentMonth: string = '';
+  paidExpenseIds = new Set<string>();
+
   constructor(
     private fb: FormBuilder,
     private expensesService: ExpensesService,
@@ -32,6 +35,9 @@ export class FixedExpensesComponent implements OnInit {
     this.initForm();
     this.loadExpenses();
     this.loadCategories();
+    const now = new Date();
+    this.currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    this.loadPayments();
   }
 
   initForm() {
@@ -50,9 +56,9 @@ export class FixedExpensesComponent implements OnInit {
         console.log('expenses:', data);
         this.expenses = [...data];
         this.isLoading = false;
-        
+
         // CORREÇÃO: O fim do bug de ter que clicar duas vezes!
-        this.cdRef.detectChanges(); 
+        this.cdRef.detectChanges();
       },
       error: (_) => {
         console.error('erro:', _);
@@ -75,6 +81,32 @@ export class FixedExpensesComponent implements OnInit {
     ];
     this.cdRef.detectChanges();
   }
+
+  loadPayments() {
+  this.expensesService.getPaymentsByMonth(this.currentMonth).subscribe({
+    next: (payments) => {
+      this.paidExpenseIds = new Set(
+        payments.filter(p => p.paid_at !== null).map(p => p.expense.id)
+      );
+      this.cdRef.detectChanges();
+    }
+  });
+}
+
+isPaid(expenseId: string): boolean {
+  return this.paidExpenseIds.has(expenseId);
+}
+
+togglePayment(expense: Expense) {
+  const request$ = this.isPaid(expense.id)
+    ? this.expensesService.unpay(expense.id, this.currentMonth)
+    : this.expensesService.pay(expense.id, this.currentMonth);
+
+  request$.subscribe({
+    next: () => this.loadPayments(),
+    error: () => this.errorMessage = 'Erro ao atualizar pagamento.'
+  });
+}
 
   // Adicione ou atualize esta função no seu arquivo .ts
   getCategoryStyle(color: string | undefined): { [key: string]: string } {
@@ -110,7 +142,7 @@ export class FixedExpensesComponent implements OnInit {
   deleteExpense(id: string) {
     if (confirm('Tem certeza que deseja excluir esta conta?')) {
       this.expensesService.remove(id).subscribe({
-        next: () => this.loadExpenses(), 
+        next: () => this.loadExpenses(),
         error: () => this.errorMessage = 'Erro ao excluir conta.'
       });
     }
@@ -118,7 +150,7 @@ export class FixedExpensesComponent implements OnInit {
 
   toggleActive(expense: Expense) {
     this.expensesService.toggle(expense.id).subscribe({
-      next: () => this.loadExpenses(), 
+      next: () => this.loadExpenses(),
       error: () => this.errorMessage = 'Erro ao alternar status.'
     });
   }
@@ -132,7 +164,7 @@ export class FixedExpensesComponent implements OnInit {
     if (payload.categoryId && String(payload.categoryId).startsWith('fake-')) {
       // Usamos undefined ou null dependendo do que o back-end do Henrique prefere.
       // Se null der erro 400 de novo, troque para 'undefined'
-      payload.categoryId = null as any; 
+      payload.categoryId = null as any;
     }
 
     const request$ = this.editingId
@@ -141,7 +173,7 @@ export class FixedExpensesComponent implements OnInit {
 
     request$.subscribe({
       next: () => {
-        this.loadExpenses(); 
+        this.loadExpenses();
         this.toggleModal();
       },
       error: (err) => {

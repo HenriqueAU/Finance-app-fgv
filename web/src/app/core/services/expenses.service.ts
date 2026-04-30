@@ -40,6 +40,18 @@ export class ExpensesService {
     return this.http.patch<Expense>(`${this.apiUrl}/expenses/${id}/toggle`, {});
   }
 
+  getPaymentsByMonth(month: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/expenses/payments/${month}`);
+  }
+
+  pay(expenseId: string, month: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/expenses/${expenseId}/payments/${month}/pay`, {});
+  }
+
+  unpay(expenseId: string, month: string): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/expenses/${expenseId}/payments/${month}/unpay`, {});
+  }
+
   remove(id: string): Observable<void> {
     return this.http.delete<void>(`${this.apiUrl}/expenses/${id}`);
   }

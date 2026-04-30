@@ -1,3 +1,3 @@
 export const environment = {
-  apiUrl: 'http://localhost:3000' // URL do seu back-end local
+  apiUrl: 'http://localhost:3000/api/v1'
 };
