@@ -1,4 +1,11 @@
-import { Body, Controller, Patch, Delete, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Patch,
+  Delete,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateSalaryDto } from './dto/update-salary.dto';
@@ -41,12 +48,18 @@ export class UsersController {
   }
 
   @Patch('me/savings')
-  updateSavings(@Body() dto: UpdateSavingsDto, @Request() req: AuthenticatedRequest) {
+  updateSavings(
+    @Body() dto: UpdateSavingsDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.usersService.updateSavings(req.user.id, dto);
   }
 
   @Patch('me/password')
-  updatePassword(@Body() dto: UpdatePasswordDto, @Request() req: AuthenticatedRequest) {
+  updatePassword(
+    @Body() dto: UpdatePasswordDto,
+    @Request() req: AuthenticatedRequest,
+  ) {
     return this.usersService.updatePassword(req.user.id, dto);
   }
 

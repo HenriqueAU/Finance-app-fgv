@@ -1,6 +1,10 @@
 export type MonthYear = string;
 
-export type IntentionStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type IntentionStatus =
+  | 'pendente'
+  | 'aprovada'
+  | 'rejeitada'
+  | 'cancelada';
 
 export type ExpenseType = 'fixed' | 'installment' | 'intention';
 

@@ -20,7 +20,7 @@ export class BuyIntentionsService {
       ...data,
       user: { id: userId },
       category: categoryId ? { id: categoryId } : null,
-      status: 'pending',
+      status: 'pendente',
     });
     return await this.intentionRepository.save(intention);
   }
@@ -77,7 +77,7 @@ export class BuyIntentionsService {
   async updateStatus(
     id: string,
     userId: string,
-    status: 'approved' | 'cancelled',
+    status: 'aprovada' | 'cancelada',
   ) {
     const intention = await this.intentionRepository.findOne({
       where: { id, user: { id: userId } },
@@ -89,6 +89,29 @@ export class BuyIntentionsService {
 
     intention.status = status;
     return await this.intentionRepository.save(intention);
+  }
+
+  async update(
+    id: string,
+    userId: string,
+    dto: Partial<CreateBuyIntentionDto>,
+  ) {
+    const intention = await this.intentionRepository.findOne({
+      where: { id, user: { id: userId } },
+    });
+
+    if (!intention) throw new NotFoundException('Intenção não encontrada.');
+
+    const { categoryId, ...data } = dto;
+
+    Object.assign(intention, {
+      ...data,
+      category: categoryId ? { id: categoryId } : intention.category,
+    });
+    console.log('salvando intention:', intention);
+    const saved = await this.intentionRepository.save(intention);
+    console.log('salvo:', saved);
+    return saved;
   }
 
   async remove(id: string, userId: string) {

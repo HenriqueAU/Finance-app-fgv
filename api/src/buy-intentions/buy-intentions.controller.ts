@@ -55,12 +55,21 @@ export class BuyIntentionsController {
 
   @Patch(':id/approve')
   approve(@Param('id') id: string, @Request() req: AuthenticadedRequest) {
-    return this.intentionsService.updateStatus(id, req.user.id, 'approved');
+    return this.intentionsService.updateStatus(id, req.user.id, 'aprovada');
   }
 
   @Patch(':id/cancel')
   cancel(@Param('id') id: string, @Request() req: AuthenticadedRequest) {
-    return this.intentionsService.updateStatus(id, req.user.id, 'cancelled');
+    return this.intentionsService.updateStatus(id, req.user.id, 'cancelada');
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() dto: CreateBuyIntentionDto,
+    @Request() req: AuthenticadedRequest,
+  ) {
+    return this.intentionsService.update(id, req.user.id, dto);
   }
 
   @Delete(':id')

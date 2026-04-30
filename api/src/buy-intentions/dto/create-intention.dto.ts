@@ -25,6 +25,10 @@ export class CreateBuyIntentionDto {
   @Min(0)
   installment_amount!: number;
 
+  @IsOptional()
+  @IsString()
+  status?: string;
+
   @IsInt()
   @Min(1)
   @Max(60)

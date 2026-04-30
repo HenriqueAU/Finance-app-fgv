@@ -80,7 +80,10 @@ export class CreditCardsComponent implements OnInit {
     if (this.cardForm.invalid) return;
 
     this.isSubmitting = true;
-    const cardData = this.cardForm.value;
+    const cardData = {
+      ...this.cardForm.value,
+      limit: Number(this.cardForm.value.limit)
+    };;
 
     const request$ = this.editingCardId
       ? this.creditCardService.update(this.editingCardId, cardData)

@@ -109,21 +109,20 @@
         </div>
       </div>
     }
-
     <!-- Modal Glassmorphism -->
     @if (showModal) {
       <div class="fixed inset-0 z-[100] flex items-center justify-center px-4">
         <div class="absolute inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-md" (click)="toggleModal()"></div>
-        
+
         <div class="relative bg-white dark:bg-[#121212] w-full max-w-lg p-8 rounded-[32px] shadow-2xl border border-slate-100 dark:border-white/10 animate-in zoom-in-95 duration-200">
-          
+
           <h2 class="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight mb-8 flex items-center gap-3">
             <span class="w-2 h-8 bg-emerald-500 rounded-full"></span>
             {{ editingId ? 'Editar Conta' : 'Nova Conta Fixa' }}
           </h2>
 
           <form [formGroup]="expenseForm" (ngSubmit)="onSubmit()" class="space-y-5">
-            
+
             <!-- Descrição -->
             <div>
               <label class="block text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2 pl-1">Descrição</label>
@@ -153,12 +152,12 @@
                 <label class="block text-[10px] font-black text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] mb-3">Criar Nova Categoria</label>
                 <div class="flex gap-3">
                   <input type="text" formControlName="name" placeholder="Nome (Ex: Moradia)" class="flex-1 bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                  
+
                   <!-- Seletor de Cor Customizado -->
                   <div class="relative w-12 h-12 rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 shrink-0">
                     <input type="color" formControlName="color" class="absolute -inset-2 w-16 h-16 cursor-pointer bg-transparent border-0 p-0">
                   </div>
-                  
+
                   <button type="button" (click)="saveInlineCategory()" [disabled]="inlineCategoryForm.invalid || isSavingCategory" class="px-5 bg-emerald-500 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 disabled:opacity-50 transition-colors">
                     {{ isSavingCategory ? '...' : 'Salvar' }}
                   </button>
@@ -190,6 +189,12 @@
                 }
               </select>
             </div>
+
+            @if (limitWarning) {
+              <div class="px-4 py-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-600 text-xs font-bold">
+                ⚠ {{ limitWarning }}
+              </div>
+            }
 
             <!-- Botões -->
             <div class="pt-6 flex gap-4">
