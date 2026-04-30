@@ -55,17 +55,23 @@
           <div class="pt-4 border-t border-slate-100 dark:border-white/5 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-1.5">
               <label class="text-[9px] font-black text-emerald-500 uppercase tracking-[0.2em] ml-1">Salário (R$)</label>
-              <input formControlName="monthlySalary" type="number" class="w-full bg-emerald-50/20 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white font-black tracking-wider focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+              <input formControlName="monthlySalary" type="number" (wheel)="$event.preventDefault()" class="w-full bg-emerald-50/20 dark:bg-emerald-500/5 border border-emerald-100 dark:border-emerald-500/20 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white font-black tracking-wider focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
             </div>
             <div class="space-y-1.5">
               <label class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Dia Recebimento</label>
-              <input formControlName="payday" type="number" class="w-full bg-slate-50/50 dark:bg-[#050505] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white font-black tracking-wider focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
+              <input formControlName="payday" type="number" (wheel)="$event.preventDefault()" class="w-full bg-slate-50/50 dark:bg-[#050505] border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white font-black tracking-wider focus:ring-2 focus:ring-emerald-500 outline-none transition-all">
             </div>
           </div>
 
-          <div class="space-y-1.5">
-            <label class="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em] ml-1">Reserva / Economias (R$)</label>
-            <input formControlName="savings" type="number" class="w-full md:w-1/2 bg-amber-50/20 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/20 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white font-black tracking-wider focus:ring-2 focus:ring-amber-500 outline-none transition-all">
+          <div class="pt-4 border-t border-slate-100 dark:border-white/5 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1.5">
+              <label class="text-[9px] font-black text-amber-500 uppercase tracking-[0.2em] ml-1">Reserva / Economias (R$)</label>
+              <input formControlName="savings" type="number" (wheel)="$event.preventDefault()" class="w-full bg-amber-50/20 dark:bg-amber-500/5 border border-amber-100 dark:border-amber-500/20 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white font-black tracking-wider focus:ring-2 focus:ring-amber-500 outline-none transition-all">
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-[9px] font-black text-rose-500 uppercase tracking-[0.2em] ml-1">Reserva de Emergência (R$)</label>
+              <input formControlName="emergency_reserve" type="number" (wheel)="$event.preventDefault()" class="w-full bg-rose-50/20 dark:bg-rose-500/5 border border-rose-100 dark:border-rose-500/20 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white font-black tracking-wider focus:ring-2 focus:ring-rose-500 outline-none transition-all">
+            </div>
           </div>
 
           <div class="pt-4 border-t border-slate-100 dark:border-white/5 flex justify-end">
