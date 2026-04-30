@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { Cron } from '@nestjs/schedule';
 import { Expense } from './entities/expense.entity';
 import { CreateExpenseDto } from './dto/create-expense.dto';
 import { UpdateExpenseDto } from './dto/update-expense.dto';
@@ -113,5 +114,35 @@ export class ExpensesService {
 
     payment.paid_at = null;
     return this.expensePaymentRepository.save(payment);
+  }
+
+  @Cron('0 0 1 * *')
+  async handleMonthTurn() {
+    const currentMonth = new Date().toISOString().slice(0, 7);
+    
+    const activeExpenses = await this.expenseRepository.find({
+      where: { is_active: true },
+      relations: ['user'],
+    });
+
+    for (const expense of activeExpenses) {
+      const existingPayment = await this.expensePaymentRepository.findOne({
+        where: { 
+          expense: { id: expense.id }, 
+          user: { id: expense.user.id },
+          month: currentMonth 
+        },
+      });
+
+      if (!existingPayment) {
+        const payment = this.expensePaymentRepository.create({
+          expense: { id: expense.id },
+          user: { id: expense.user.id },
+          month: currentMonth,
+          paid_at: null,
+        });
+        await this.expensePaymentRepository.save(payment);
+      }
+    }
   }
 }
