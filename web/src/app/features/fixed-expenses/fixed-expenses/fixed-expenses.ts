@@ -29,6 +29,8 @@ export class FixedExpensesComponent implements OnInit {
   showInlineCategory = false;
   isSavingCategory = false;
 
+  limitWarning = '';
+
   constructor(
     private fb: FormBuilder,
     private expensesService: ExpensesService,
@@ -107,9 +109,9 @@ export class FixedExpensesComponent implements OnInit {
   // No seu fixed-expenses.ts
   saveInlineCategory() {
     if (this.inlineCategoryForm.invalid) return;
-    
+
     this.isSavingCategory = true;
-    
+
     // Pegamos os dados do formulário e injetamos a obrigatoriedade do NestJS
     const payload = {
       ...this.inlineCategoryForm.value,
@@ -220,38 +222,46 @@ togglePayment(expense: Expense) {
   onSubmit() {
     if (this.expenseForm.invalid) return;
 
-    // 1. Fazemos uma cópia dos dados para não alterar o formulário original
     const payload = { ...this.expenseForm.value };
-
-    // 2. A MÁGICA: Forçamos o amount a ser um número real (Isso mata o erro da sua imagem!)
     payload.amount = Number(payload.amount);
-
-    // 3. Limpamos os relacionamentos nulos/vazios para o NestJS não rejeitar os UUIDs
     if (!payload.categoryId || payload.categoryId === 'null') delete payload.categoryId;
     if (!payload.creditCardId || payload.creditCardId === 'null') delete payload.creditCardId;
-    
-    // Se o dia de vencimento estiver vazio, removemos também
     if (!payload.due_day) delete payload.due_day;
 
-    // --- A partir daqui é a sua lógica normal de salvar ---
-    
-    // Exemplo de como deve estar sua chamada:
-    if (this.editingId) {
-      this.expensesService.update(this.editingId, payload).subscribe({
-        next: () => {
-          this.loadExpenses(); // ou o método que você usa para recarregar a tabela
-          this.toggleModal();
+    const creditCardId = this.expenseForm.value.creditCardId;
+
+    if (creditCardId && creditCardId !== 'null') {
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      this.creditCardService.getDashboardCardsUsage(creditCardId, month).subscribe({
+        next: (usage) => {
+          if (payload.amount > usage.available) {
+            this.limitWarning = `Limite insuficiente. Disponível: R$ ${usage.available.toFixed(2)}`;
+            this.cdRef.detectChanges();
+            return;
+          }
+          this.limitWarning = '';
+          this.saveExpense(payload);
         },
-        error: (err) => console.error('Erro ao atualizar:', err)
+        error: () => this.saveExpense(payload)
       });
     } else {
-      this.expensesService.create(payload).subscribe({
-        next: () => {
-          this.loadExpenses(); // ou o método que você usa para recarregar a tabela
-          this.toggleModal();
-        },
-        error: (err) => console.error('Erro ao criar:', err)
-      });
+      this.saveExpense(payload);
     }
+  }
+
+  private saveExpense(payload: any) {
+    const request$ = this.editingId
+      ? this.expensesService.update(this.editingId, payload)
+      : this.expensesService.create(payload);
+
+    request$.subscribe({
+      next: () => {
+        this.loadExpenses();
+        this.toggleModal();
+      },
+      error: (err) => console.error('Erro ao salvar:', err)
+    });
   }
 }

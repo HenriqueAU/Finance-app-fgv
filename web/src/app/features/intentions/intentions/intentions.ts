@@ -17,6 +17,12 @@ interface Intention {
   categoryId?: string;
 }
 
+interface SimulationResult {
+  viable: boolean;
+  criticalMonths: string[];
+  projection: any[];
+}
+
 @Component({
   selector: 'app-intentions',
   standalone: true,
@@ -28,16 +34,20 @@ export class IntentionsComponent implements OnInit {
 
   intentionForm!: FormGroup;
   inlineCategoryForm!: FormGroup;
-  
+
   intentions: Intention[] = [];
   categories: Category[] = [];
-  
+
   showModal = false;
   showInlineCategory = false;
   isSavingCategory = false;
   isLoading = true;
   editingId: string | null = null;
   isSubmitting = false;
+
+  simulationResult: SimulationResult | null = null;
+  simulatingId: string | null = null;
+  showSimulation = false;
 
   constructor(
     private fb: FormBuilder,
@@ -95,12 +105,16 @@ export class IntentionsComponent implements OnInit {
     if (rawStatus === 'approved') rawStatus = 'aprovada';
     if (rawStatus === 'rejected') rawStatus = 'rejeitada';
     if (rawStatus === 'canceled') rawStatus = 'cancelada';
+    if (rawStatus === 'aprovada') rawStatus = 'aprovada';
+    if (rawStatus === 'cancelada') rawStatus = 'cancelada';
+    if (rawStatus === 'pendente') rawStatus = 'pendente';
+    if (rawStatus === 'rejeitada') rawStatus = 'rejeitada';
 
     return {
       id: item.id,
       description: item.description,
-      amount: Number(item.installment_amount), 
-      status: rawStatus, 
+      amount: Number(item.installment_amount),
+      status: rawStatus,
       category: item.category?.name || 'Geral',
       categoryColor: item.category?.color || '#cbd5e1',
       categoryId: item.category?.id
@@ -114,7 +128,7 @@ export class IntentionsComponent implements OnInit {
 
   saveInlineCategory() {
     if (this.inlineCategoryForm.invalid) return;
-    
+
     const newCategoryName = this.inlineCategoryForm.value.name.trim();
 
     // Tratamento de duplicidade no frontend
@@ -126,7 +140,7 @@ export class IntentionsComponent implements OnInit {
       alert(`Você já tem uma categoria chamada "${existingCategory.name}". Vou selecioná-la para você!`);
       this.intentionForm.patchValue({ categoryId: existingCategory.id });
       this.toggleInlineCategory();
-      return; 
+      return;
     }
 
     this.isSavingCategory = true;
@@ -156,8 +170,9 @@ export class IntentionsComponent implements OnInit {
       this.intentionForm.markAllAsTouched();
       return;
     }
-
-    this.isSubmitting = true; 
+  console.log('editingId:', this.editingId);
+  console.log('payload:', this.intentionForm.value);
+    this.isSubmitting = true;
     const formValues = this.intentionForm.value;
 
     // Formato exato exigido pelo Regex: YYYY-MM
@@ -167,9 +182,12 @@ export class IntentionsComponent implements OnInit {
     const payload: any = {
       description: formValues.description,
       installment_amount: Number(formValues.amount),
-      months: 1, 
-      desired_start_month: monthStr, // <--- O VERDADEIRO NOME DA CHAVE!
+      months: 1,
+      desired_start_month: monthStr,
     };
+
+    if (formValues.status) payload.status = formValues.status;
+    if (formValues.categoryId && formValues.categoryId !== 'null') payload.categoryId = formValues.categoryId;
 
     // Caso o seu backend aceite o status na hora de criar/atualizar
     if (formValues.status) {
@@ -177,19 +195,20 @@ export class IntentionsComponent implements OnInit {
     }
 
     if (formValues.categoryId && formValues.categoryId !== 'null') {
-      payload.categoryId = formValues.categoryId; 
+      payload.categoryId = formValues.categoryId;
     }
-
-    const request$ = this.editingId 
+console.log('payload enviado:', payload);
+    const request$ = this.editingId
       ? this.intentionsService.update(this.editingId, payload)
       : this.intentionsService.create(payload);
 
     request$.subscribe({
-      next: () => {
-        this.loadData(); 
-        this.toggleModal();
-        this.isSubmitting = false;
-      },
+    next: () => {
+      this.loadData();
+      this.toggleModal();
+      this.isSubmitting = false;
+      this.cdr.detectChanges();
+    },
       error: (err) => {
         console.error('Erro ao salvar intenção:', err);
         alert('Erro ao salvar. Verifique o console do navegador.');
@@ -199,9 +218,36 @@ export class IntentionsComponent implements OnInit {
   }
 
   simulateIntention(item: Intention) {
-    // Aqui vai a chamada pro seu backend de simulação no futuro!
-    alert(`Simulando a compra de: ${item.description} (${item.amount.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}). \n\nEm breve o motor de viabilidade estará conectado aqui!`);
+    this.simulatingId = item.id;
+    this.showSimulation = false;
+    this.simulationResult = null;
+
+    const today = new Date();
+    const monthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+    this.intentionsService.simulate({
+      description: item.description,
+      installment_amount: item.amount,
+      months: 1,
+      desired_start_month: monthStr
+    }).subscribe({
+      next: (result) => {
+        this.simulationResult = result;
+        this.showSimulation = true;
+        this.simulatingId = null;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Erro ao simular:', err);
+        this.simulatingId = null;
+      }
+    });
   }
+
+closeSimulation() {
+  this.showSimulation = false;
+  this.simulationResult = null;
+}
 
   deleteIntention(id: string) {
     if (confirm('Deseja realmente excluir esta intenção de compra?')) {

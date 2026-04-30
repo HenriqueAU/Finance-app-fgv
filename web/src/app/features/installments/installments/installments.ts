@@ -29,17 +29,19 @@ export class InstallmentsComponent implements OnInit {
 
   installmentForm!: FormGroup;
   inlineCategoryForm!: FormGroup; // CORREÇÃO: Faltava a exclamação (!)
-  
+
   installments: Installment[] = [];
   categories: Category[] = [];
   creditCards: CreditCard[] = [];
-  
+
   showModal = false;
   showInlineCategory = false;
   isSavingCategory = false;
   isLoading = true;
   editingId: string | null = null;
   isSubmitting = false;
+
+  limitWarning = '';
 
   constructor(
     private fb: FormBuilder,
@@ -90,13 +92,13 @@ export class InstallmentsComponent implements OnInit {
 
     // Carrega Parcelamentos
     this.installmentsService.getInstallments().subscribe({
-      next: (data: any[]) => { 
+      next: (data: any[]) => {
         // CORREÇÃO: Usando a sua função para formatar os dados que vêm do banco
         this.installments = data.map(item => this.mapToFrontend(item));
         this.isLoading = false;
         this.cdr.detectChanges(); // Detecta mudanças e atualiza a view
       },
-      error: (err: any) => { 
+      error: (err: any) => {
         console.error('Erro ao buscar parcelamentos:', err);
         this.isLoading = false;
         this.cdr.detectChanges(); // Detecta mudanças e atualiza a view
@@ -109,7 +111,7 @@ export class InstallmentsComponent implements OnInit {
     let startMonth: number;
 
     if (item.start_month) {
-      // A MÁGICA: Ao usar métodos UTC, ignoramos o desconto de 3 horas do fuso do Brasil, 
+      // A MÁGICA: Ao usar métodos UTC, ignoramos o desconto de 3 horas do fuso do Brasil,
       // garantindo que o mês lido seja exatamente o mês salvo, sem voltar pro dia 31 do mês passado.
       const dateObj = new Date(item.start_month);
       startYear = dateObj.getUTCFullYear();
@@ -145,7 +147,7 @@ export class InstallmentsComponent implements OnInit {
 
   saveInlineCategory() {
     if (this.inlineCategoryForm.invalid) return;
-    
+
     this.isSavingCategory = true;
     const payload = {
       ...this.inlineCategoryForm.value,
@@ -169,17 +171,14 @@ export class InstallmentsComponent implements OnInit {
   onSubmit() {
     if (this.installmentForm.invalid) return;
 
-    this.isSubmitting = true; 
+    this.isSubmitting = true;
     const formValues = this.installmentForm.value;
 
-    // --- CÁLCULO DE DATA A PROVA DE BALAS ---
     const currentParcel = Number(formValues.currentParcel);
     const today = new Date();
-    // Fixamos o dia como 1º para que subtrair o mês nunca pule Fevereiro ou meses de 30 dias
-    const startDate = new Date(today.getFullYear(), today.getMonth(), 1); 
+    const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
     startDate.setMonth(startDate.getMonth() - (currentParcel - 1));
     const startMonth = `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}`;
-    // ----------------------------------------
 
     const payload: any = {
       description: formValues.name,
@@ -189,20 +188,41 @@ export class InstallmentsComponent implements OnInit {
       type: formValues.type || 'regular',
     };
 
-    if (formValues.categoryId && formValues.categoryId !== 'null') {
-      payload.categoryId = formValues.categoryId; 
-    }
-    if (formValues.creditCardId && formValues.creditCardId !== 'null') {
-      payload.creditCardId = formValues.creditCardId;
-    }
+    if (formValues.categoryId && formValues.categoryId !== 'null') payload.categoryId = formValues.categoryId;
+    if (formValues.creditCardId && formValues.creditCardId !== 'null') payload.creditCardId = formValues.creditCardId;
 
-    const request$ = this.editingId 
+    const creditCardId = formValues.creditCardId;
+
+    if (creditCardId && creditCardId !== 'null') {
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      this.creditCardService.getDashboardCardsUsage(creditCardId, month).subscribe({
+        next: (usage) => {
+          if (payload.installment_amount > usage.available) {
+            this.limitWarning = `Limite insuficiente. Disponível: R$ ${usage.available.toFixed(2)}`;
+            this.isSubmitting = false;
+            this.cdr.detectChanges();
+            return;
+          }
+          this.limitWarning = '';
+          this.saveInstallment(payload);
+        },
+        error: () => this.saveInstallment(payload)
+      });
+    } else {
+      this.saveInstallment(payload);
+    }
+  }
+
+  private saveInstallment(payload: any) {
+    const request$ = this.editingId
       ? this.installmentsService.updateInstallment(this.editingId, payload)
       : this.installmentsService.createInstallment(payload);
 
     request$.subscribe({
       next: () => {
-        this.loadData(); 
+        this.loadData();
         this.toggleModal();
         this.isSubmitting = false;
       },
