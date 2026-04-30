@@ -9,9 +9,18 @@ import { Router } from '@angular/router';
   imports: [FormsModule],
   templateUrl: './register.html'
 })
+
 export class Register {
   form = { name: '', email: '', password: '', salary: 0, emergency_reserve: 0, payday: 5 };
 
+  toggleDarkMode() {
+  // Adiciona ou remove a classe 'dark' no elemento raiz (html)
+  document.documentElement.classList.toggle('dark');
+  
+  // Opcional: Salva a preferência no localStorage para persistir
+  const isDark = document.documentElement.classList.contains('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
   constructor(private authService: AuthService, private router: Router) {}
 
   handleRegister() {

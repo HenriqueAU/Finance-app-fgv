@@ -32,7 +32,7 @@ export class BuyIntention {
   @Column({ name: 'desired_start_month', type: 'varchar' })
   desired_start_month!: string;
 
-  @Column({ default: 'pending' })
+  @Column({ default: 'pendente' })
   status!: IntentionStatus;
 
   @CreateDateColumn()

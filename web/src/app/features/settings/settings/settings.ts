@@ -15,6 +15,13 @@ export class SettingsComponent implements OnInit {
   profileForm!: FormGroup;
   passwordForm!: FormGroup;
   showSuccessMessage = false;
+  isSidebarVisible = true;
+
+  toggleSidebar() {
+  this.isSidebarVisible = !this.isSidebarVisible;
+  // Se você estiver usando um serviço global para a sidebar, 
+  // chame o método do serviço aqui.
+}
 
   constructor(
     private fb: FormBuilder, 

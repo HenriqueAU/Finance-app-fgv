@@ -13,6 +13,15 @@ export class Login {
   email = '';
   password = '';
 
+  toggleDarkMode() {
+  // Adiciona ou remove a classe 'dark' no elemento raiz (html)
+  document.documentElement.classList.toggle('dark');
+  
+  // Opcional: Salva a preferência no localStorage para persistir
+  const isDark = document.documentElement.classList.contains('dark');
+  localStorage.setItem('theme', isDark ? 'dark' : 'light');
+}
+
   constructor(private authService: AuthService, private router: Router) {}
 
   handleLogin() {
