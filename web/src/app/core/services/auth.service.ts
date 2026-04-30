@@ -51,6 +51,10 @@ export class AuthService {
     return this.http.patch<User>(`${this.apiUrl}/users/me/savings`, data);
   }
 
+  updateEmergencyReserve(data: { emergency_reserve: number }): Observable<any> {
+    return this.http.patch(`${this.apiUrl}/users/me/emergency_reserve`, data);
+  }
+
   updatePassword(data: any): Observable<User> {
     return this.http.patch<User>(`${this.apiUrl}/users/me/password`, data);
   }

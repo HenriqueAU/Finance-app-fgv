@@ -19,8 +19,6 @@ export class SettingsComponent implements OnInit {
 
   toggleSidebar() {
   this.isSidebarVisible = !this.isSidebarVisible;
-  // Se você estiver usando um serviço global para a sidebar, 
-  // chame o método do serviço aqui.
 }
 
   constructor(
@@ -35,7 +33,8 @@ export class SettingsComponent implements OnInit {
       email: ['', [Validators.required, Validators.email]],
       monthlySalary: [0, [Validators.required, Validators.min(0)]],
       payday: [null, [Validators.min(1), Validators.max(31)]],
-      savings: [0, [Validators.min(0)]]
+      savings: [0, [Validators.min(0)]],
+      emergency_reserve: [0, [Validators.min(0)]]
     });
 
     this.passwordForm = this.fb.group({
@@ -49,9 +48,10 @@ export class SettingsComponent implements OnInit {
         email: user.email,
         monthlySalary: user.salary,
         payday: user.payday,
-        savings: user.savings || 0
-      })
-    })
+        savings: user.savings || 0,
+        emergency_reserve: user.emergency_reserve || 0
+      });
+    });
   }
 
   get currentName(): string {
@@ -62,32 +62,39 @@ export class SettingsComponent implements OnInit {
     return this.profileForm.get('email')?.value || 'E-mail não informado';
   }
 
-saveProfile() {
-  if (this.profileForm.invalid) {
-    alert('Formulário inválido! Verifique se todos os campos estão preenchidoscorretamente.');
-    return;
+  saveProfile() {
+    if (this.profileForm.invalid) {
+      alert('Formulário inválido! Verifique se todos os campos estão preenchidos corretamente.');
+      return;
+    }
+
+    const { name, email, monthlySalary, payday, savings, emergency_reserve } = this.profileForm.value;
+    const validPayday = payday ? Number(payday) : null;
+
+    // Fila de atualizações sequenciais
+    this.authService.updateProfile({ name, email }).subscribe({
+      next: () => {
+        this.authService.updateSavings({ savings: Number(savings) }).subscribe({
+          next: () => {
+            // Nova requisição para a Reserva de Emergência
+            this.authService.updateEmergencyReserve({ emergency_reserve: Number(emergency_reserve) }).subscribe({
+              next: () => {
+                this.authService.updateSalary({ salary: Number(monthlySalary), payday: validPayday }).subscribe({
+                  next: () => this.triggerSuccess(),
+                  error: () => alert('Erro ao salvar o salário!')
+                });
+              },
+              error: () => alert('Erro ao salvar a reserva de emergência.')
+            });
+          },
+          error: () => alert('Erro ao salvar as economias.')
+        });
+      },
+      error: () => alert('Erro ao salvar o perfil.')
+    });
   }
 
-  const { name, email, monthlySalary, payday, savings } = this.profileForm.value;
-  const validPayday = payday ? Number(payday) : null;
-
-  this.authService.updateProfile({ name, email }).subscribe({
-    next: () => {
-      this.authService.updateSavings({ savings: Number(savings) }).subscribe({
-        next: () => {
-          this.authService.updateSalary({ salary: Number(monthlySalary), payday: validPayday }).subscribe({
-            next: () => this.triggerSuccess(),
-            error: () => alert('Erro ao salvar!')
-          });
-        },
-        error: () => alert('Erro ao salvar as economias.')
-      });
-    },
-    error: () => alert('Erro ao salvar o perfil.')
-  });
-}
-
-changePassword() {
+  changePassword() {
     if (this.passwordForm.invalid) return;
     
     this.authService.updatePassword(this.passwordForm.value).subscribe({
